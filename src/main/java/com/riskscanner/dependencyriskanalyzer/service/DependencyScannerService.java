@@ -1,27 +1,19 @@
 package com.riskscanner.dependencyriskanalyzer.service;
 
 import com.riskscanner.dependencyriskanalyzer.model.DependencyCoordinate;
+import com.riskscanner.dependencyriskanalyzer.model.DependencyNode;
+import com.riskscanner.dependencyriskanalyzer.service.dependency.DependencyResolverFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.w3c.dom.*;
 
-import javax.xml.parsers.*;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathFactory;
-import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
- * Scans a local filesystem path for dependency declarations.
+ * Scans a local filesystem path for dependency declarations using proper dependency resolution.
  *
  * <p>Supported inputs:
  * <ul>
@@ -31,243 +23,119 @@ import java.util.regex.Pattern;
  *
  * <p>Supported build tools:
  * <ul>
- *   <li>Maven: {@code pom.xml}</li>
- *   <li>Gradle: {@code build.gradle} / {@code build.gradle.kts}</li>
+ *   <li>Maven: {@code pom.xml} with full transitive dependency resolution</li>
+ *   <li>Gradle: {@code build.gradle} / {@code build.gradle.kts} with dependency tree</li>
  * </ul>
  */
 @Service
 public class DependencyScannerService {
 
-	// Method to scan pom.xml or build.gradle file for dependencies
-	/**
-	 * Legacy scan method that returns string coordinates in the form {@code groupId:artifactId:version}.
-	 * Prefer {@link #scanProject(String)} for richer output.
-	 */
-	public List<String> scanDependencies(String filePath) throws Exception {
-		List<DependencyCoordinate> coordinates = scanProject(filePath);
-		List<String> dependencies = new ArrayList<>();
-		for (DependencyCoordinate coordinate : coordinates) {
-			dependencies.add(coordinate.groupId() + ":" + coordinate.artifactId() + ":" + coordinate.version());
-		}
-		return dependencies;
-	}
+    private final DependencyResolverFactory resolverFactory;
 
-	/**
-	 * Scans a project folder (or build file) and returns structured dependency coordinates.
-	 *
-	 * <p>If a directory is provided, the scanner selects the first supported build file in this order:
-	 * {@code pom.xml}, {@code build.gradle}, {@code build.gradle.kts}.
-	 */
-	public List<DependencyCoordinate> scanProject(String projectPath) throws Exception {
-		Path inputPath = Paths.get(projectPath);
-		Path buildFilePath;
-		if (Files.isDirectory(inputPath)) {
-			Path pom = inputPath.resolve("pom.xml");
-			Path gradle = inputPath.resolve("build.gradle");
-			Path gradleKts = inputPath.resolve("build.gradle.kts");
-			if (Files.exists(pom)) {
-				buildFilePath = pom;
-			} else if (Files.exists(gradle)) {
-				buildFilePath = gradle;
-			} else if (Files.exists(gradleKts)) {
-				buildFilePath = gradleKts;
-			} else {
-				throw new Exception("No pom.xml, build.gradle, or build.gradle.kts found in selected folder.");
-			}
-		} else {
-			buildFilePath = inputPath;
-		}
+    @Autowired
+    public DependencyScannerService(DependencyResolverFactory resolverFactory) {
+        this.resolverFactory = resolverFactory;
+    }
 
-		String fileName = buildFilePath.getFileName().toString();
-		if (fileName.equalsIgnoreCase("pom.xml")) {
-			return scanMavenDependencies(buildFilePath);
-		}
-		if (fileName.equalsIgnoreCase("build.gradle") || fileName.equalsIgnoreCase("build.gradle.kts")) {
-			return scanGradleDependencies(buildFilePath);
-		}
-		throw new Exception("Unsupported file format. Only pom.xml, build.gradle, or build.gradle.kts files are supported.");
-	}
+    /**
+     * Legacy scan method that returns string coordinates in the form {@code groupId:artifactId:version}.
+     * Prefer {@link #scanProject(String)} for richer output.
+     */
+    public List<String> scanDependencies(String filePath) throws Exception {
+        List<DependencyCoordinate> coordinates = scanProject(filePath);
+        return coordinates.stream()
+            .map(coord -> coord.groupId() + ":" + coord.artifactId() + ":" + coord.version())
+            .collect(Collectors.toList());
+    }
 
-	// Method to scan Maven pom.xml file for dependencies
-	public List<DependencyCoordinate> scanMavenDependencies(Path pomXmlPath) throws Exception {
-		List<DependencyCoordinate> dependencies = new ArrayList<>();
+    /**
+     * Scans a project folder (or build file) and returns structured dependency coordinates.
+     *
+     * <p>Uses proper dependency resolution to include transitive dependencies and their scopes.
+     * The method automatically detects the build tool type and uses the appropriate resolver.
+     *
+     * @param projectPath path to project folder or build file
+     * @return list of dependency coordinates (direct and transitive)
+     * @throws Exception if no supported build file is found or resolution fails
+     */
+    public List<DependencyCoordinate> scanProject(String projectPath) throws Exception {
+        Path inputPath = Paths.get(projectPath);
+        
+        if (!resolverFactory.supports(inputPath)) {
+            throw new Exception("No supported build file found in: " + projectPath + 
+                ". Supported files: pom.xml, build.gradle, build.gradle.kts");
+        }
 
-		// Read the pom.xml file
-		File file = pomXmlPath.toFile();
+        try {
+            // Get the appropriate resolver
+            var resolver = resolverFactory.getResolver(inputPath);
+            
+            // Resolve dependencies using the resolver
+            List<DependencyNode> dependencyNodes = resolver.resolveDependencies(inputPath);
+            
+            // Flatten the tree to get all dependencies
+            return flattenDependencyTree(dependencyNodes);
+            
+        } catch (Exception e) {
+            throw new Exception("Failed to resolve dependencies for " + projectPath + ": " + e.getMessage(), e);
+        }
+    }
 
-		// Parse the XML file
-		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-		factory.setNamespaceAware(true);
-		DocumentBuilder builder = factory.newDocumentBuilder();
-		Document doc = builder.parse(file);
-		doc.getDocumentElement().normalize();
+    /**
+     * Scans a project and returns the full dependency tree structure.
+     *
+     * <p>This method preserves the hierarchical structure of dependencies,
+     * including parent-child relationships and dependency paths.
+     *
+     * @param projectPath path to project folder or build file
+     * @return list of root dependency nodes with their transitive dependencies
+     * @throws Exception if no supported build file is found or resolution fails
+     */
+    public List<DependencyNode> scanProjectTree(String projectPath) throws Exception {
+        Path inputPath = Paths.get(projectPath);
+        
+        if (!resolverFactory.supports(inputPath)) {
+            throw new Exception("No supported build file found in: " + projectPath);
+        }
 
-		Map<String, String> properties = readMavenProperties(doc);
-		Map<String, String> managedVersions = readMavenDependencyManagement(doc, properties);
-		String parentVersion = readParentVersion(doc);
+        var resolver = resolverFactory.getResolver(inputPath);
+        return resolver.resolveDependencies(inputPath);
+    }
 
-		XPath xPath = XPathFactory.newInstance().newXPath();
+    /**
+     * Flattens a dependency tree into a list of unique dependency coordinates.
+     *
+     * @param dependencyNodes list of root dependency nodes
+     * @return flattened list of unique dependency coordinates
+     */
+    private List<DependencyCoordinate> flattenDependencyTree(List<DependencyNode> dependencyNodes) {
+        List<DependencyCoordinate> result = new ArrayList<>();
+        flattenNode(dependencyNodes, result);
+        return result;
+    }
 
-		NodeList directDependencies = (NodeList) xPath.evaluate(
-				"/*[local-name()='project']/*[local-name()='dependencies']/*[local-name()='dependency']",
-				doc,
-				XPathConstants.NODESET);
-
-		addMavenDependenciesFromNodeList(directDependencies, dependencies, properties, managedVersions, parentVersion);
-
-		return dependencies;
-	}
-
-	private void addMavenDependenciesFromNodeList(NodeList nodeList, List<DependencyCoordinate> dependencies, Map<String, String> properties, Map<String, String> managedVersions, String parentVersion) {
-		if (nodeList == null) {
-			return;
-		}
-
-		// Iterate through the node list and extract data
-		for (int i = 0; i < nodeList.getLength(); i++) {
-			Node node = nodeList.item(i);
-			if (node.getNodeType() == Node.ELEMENT_NODE) {
-				Element element = (Element) node;
-
-				// Extract groupId, artifactId, and version
-				String groupId = getTagValue("groupId", element);
-				String artifactId = getTagValue("artifactId", element);
-				String version = getTagValue("version", element);
-
-				// Resolve version using hierarchy: explicit > dependencyManagement > parent version
-				if (version == null || version.trim().isEmpty()) {
-					String key = (groupId == null ? "" : groupId) + ":" + artifactId;
-					version = managedVersions.get(key);
-				}
-				if (version == null || version.trim().isEmpty()) {
-					version = parentVersion;
-				}
-				version = resolveMavenVersion(version, properties);
-
-				dependencies.add(new DependencyCoordinate(
-						groupId == null ? "Unknown" : groupId,
-						artifactId == null ? "Unknown" : artifactId,
-						version == null ? "Unknown" : version,
-						"maven"));
-			}
-		}
-	}
-
-	// Helper method to get the value of a tag
-	private String getTagValue(String tag, Element element) {
-		NodeList nodeList = element.getElementsByTagNameNS("*", tag);
-		if (nodeList.getLength() == 0) {
-			nodeList = element.getElementsByTagName(tag);
-		}
-		if (nodeList.getLength() == 0) {
-			return null;
-		}
-		Node node = nodeList.item(0);
-		return node.getTextContent();
-	}
-
-	private Map<String, String> readMavenDependencyManagement(Document doc, Map<String, String> properties) {
-		Map<String, String> managedVersions = new HashMap<>();
-		NodeList dmNodes = doc.getElementsByTagNameNS("*", "dependencyManagement");
-		if (dmNodes.getLength() == 0) {
-			dmNodes = doc.getElementsByTagName("dependencyManagement");
-		}
-		if (dmNodes.getLength() == 0) {
-			return managedVersions;
-		}
-		Node dmNode = dmNodes.item(0);
-		NodeList deps = dmNode.getChildNodes();
-		for (int i = 0; i < deps.getLength(); i++) {
-			Node dep = deps.item(i);
-			if (dep.getNodeType() != Node.ELEMENT_NODE || !"dependencies".equals(dep.getLocalName())) {
-				continue;
-			}
-			NodeList depList = dep.getChildNodes();
-			for (int j = 0; j < depList.getLength(); j++) {
-				Node depItem = depList.item(j);
-				if (depItem.getNodeType() != Node.ELEMENT_NODE || !"dependency".equals(depItem.getLocalName())) {
-					continue;
-				}
-				Element depEl = (Element) depItem;
-				String groupId = getTagValue("groupId", depEl);
-				String artifactId = getTagValue("artifactId", depEl);
-				String version = getTagValue("version", depEl);
-				if (groupId != null && artifactId != null && version != null) {
-					String key = groupId + ":" + artifactId;
-					managedVersions.put(key, resolveMavenVersion(version, properties));
-				}
-			}
-		}
-		return managedVersions;
-	}
-
-	private String readParentVersion(Document doc) {
-		NodeList parentNodes = doc.getElementsByTagNameNS("*", "parent");
-		if (parentNodes.getLength() == 0) {
-			parentNodes = doc.getElementsByTagName("parent");
-		}
-		if (parentNodes.getLength() == 0) {
-			return null;
-		}
-		Node parentNode = parentNodes.item(0);
-		if (parentNode.getNodeType() != Node.ELEMENT_NODE) {
-			return null;
-		}
-		Element parentEl = (Element) parentNode;
-		return getTagValue("version", parentEl);
-	}
-
-	private Map<String, String> readMavenProperties(Document doc) {
-		Map<String, String> properties = new HashMap<>();
-		NodeList propertiesNodes = doc.getElementsByTagNameNS("*", "properties");
-		if (propertiesNodes.getLength() == 0) {
-			propertiesNodes = doc.getElementsByTagName("properties");
-		}
-		if (propertiesNodes.getLength() == 0) {
-			return properties;
-		}
-		Node propertiesNode = propertiesNodes.item(0);
-		NodeList children = propertiesNode.getChildNodes();
-		for (int i = 0; i < children.getLength(); i++) {
-			Node child = children.item(i);
-			if (child.getNodeType() != Node.ELEMENT_NODE) {
-				continue;
-			}
-			String key = child.getLocalName() == null ? child.getNodeName() : child.getLocalName();
-			properties.put(key, child.getTextContent());
-		}
-		return properties;
-	}
-
-	private String resolveMavenVersion(String version, Map<String, String> properties) {
-		if (version == null) {
-			return null;
-		}
-		String trimmed = version.trim();
-		Pattern propertyPattern = Pattern.compile("\\$\\{([^}]+)}");
-		Matcher matcher = propertyPattern.matcher(trimmed);
-		if (matcher.matches()) {
-			String key = matcher.group(1);
-			String resolved = properties.get(key);
-			return resolved == null ? trimmed : resolved;
-		}
-		return trimmed;
-	}
-
-	// Method to scan Gradle build.gradle file for dependencies
-	private List<DependencyCoordinate> scanGradleDependencies(Path gradleFilePath) throws Exception {
-		List<DependencyCoordinate> dependencies = new ArrayList<>();
-		String content = Files.readString(gradleFilePath, StandardCharsets.UTF_8);
-		String regex = "[\\\"']([\\w\\.-]+):([\\w\\.-]+):([^\\\"'\\)\\s]+)[\\\"']";
-		Pattern pattern = Pattern.compile(regex);
-		Matcher matcher = pattern.matcher(content);
-		while (matcher.find()) {
-			dependencies.add(new DependencyCoordinate(
-					matcher.group(1),
-					matcher.group(2),
-					matcher.group(3),
-					"gradle"));
-		}
-		return dependencies;
-	}
+    /**
+     * Recursively flattens dependency nodes into a list of coordinates.
+     *
+     * @param nodes current list of nodes to process
+     * @param result accumulator for unique coordinates
+     */
+    private void flattenNode(List<DependencyNode> nodes, List<DependencyCoordinate> result) {
+        for (DependencyNode node : nodes) {
+            DependencyCoordinate coord = node.getCoordinate();
+            
+            // Add if not already present (avoid duplicates)
+            if (result.stream().noneMatch(c -> 
+                c.groupId().equals(coord.groupId()) && 
+                c.artifactId().equals(coord.artifactId()) && 
+                c.version().equals(coord.version()))) {
+                result.add(coord);
+            }
+            
+            // Recursively process children
+            if (!node.getChildren().isEmpty()) {
+                flattenNode(node.getChildren(), result);
+            }
+        }
+    }
 }
