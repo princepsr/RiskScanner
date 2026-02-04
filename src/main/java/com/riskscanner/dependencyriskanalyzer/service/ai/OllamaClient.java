@@ -53,6 +53,34 @@ public class OllamaClient implements AiClient {
     }
 
     @Override
+    public String generateCompletion(String prompt) {
+        String requestBody = String.format("""
+                {
+                  "model": "%s",
+                  "prompt": "%s",
+                  "stream": false
+                }
+                """, model, prompt.replace("\"", "\\\"").replace("\n", "\\n"));
+        
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(baseUrl + "/api/generate"))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                .timeout(Duration.ofSeconds(120))
+                .build();
+
+        try {
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() / 100 != 2) {
+                throw new IllegalStateException("Ollama API error: " + response.statusCode() + " " + response.body());
+            }
+            return parseOllamaTextResponse(response.body());
+        } catch (Exception e) {
+            throw new IllegalStateException("Ollama request failed: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
     public void testConnection() {
         String testBody = """
                 {
@@ -138,6 +166,16 @@ public class OllamaClient implements AiClient {
                   }
                 }
                 """.formatted(model, systemMessage.replace("\"", "\\\""), prompt.toString().replace("\"", "\\\""));
+    }
+
+    private String parseOllamaTextResponse(String json) {
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            com.fasterxml.jackson.databind.JsonNode root = mapper.readTree(json);
+            return root.path("response").asText();
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to parse Ollama response: " + e.getMessage(), e);
+        }
     }
 
     private DependencyRiskAnalysisResult parseOllamaResponse(String json) {

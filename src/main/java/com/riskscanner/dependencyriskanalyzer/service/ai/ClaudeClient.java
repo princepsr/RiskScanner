@@ -55,6 +55,38 @@ public class ClaudeClient implements AiClient {
     }
 
     @Override
+    public String generateCompletion(String prompt) {
+        String requestBody = String.format("""
+                {
+                  "model": "%s",
+                  "max_tokens": 2000,
+                  "messages": [
+                    {"role": "user", "content": "%s"}
+                  ]
+                }
+                """, model, prompt.replace("\"", "\\\"").replace("\n", "\\n"));
+        
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("https://api.anthropic.com/v1/messages"))
+                .header("x-api-key", apiKey)
+                .header("anthropic-version", "2023-06-01")
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                .timeout(Duration.ofSeconds(60))
+                .build();
+
+        try {
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() / 100 != 2) {
+                throw new IllegalStateException("Claude API error: " + response.statusCode() + " " + response.body());
+            }
+            return parseClaudeTextResponse(response.body());
+        } catch (Exception e) {
+            throw new IllegalStateException("Claude request failed: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
     public void testConnection() {
         String testBody = """
                 {
@@ -143,6 +175,19 @@ public class ClaudeClient implements AiClient {
                   ]
                 }
                 """.formatted(model, systemMessage.replace("\"", "\\\""), prompt.toString().replace("\"", "\\\""));
+    }
+
+    private String parseClaudeTextResponse(String json) {
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            com.fasterxml.jackson.databind.JsonNode root = mapper.readTree(json);
+            return root.path("content")
+                    .get(0)
+                    .path("text")
+                    .asText();
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to parse Claude response: " + e.getMessage(), e);
+        }
     }
 
     private DependencyRiskAnalysisResult parseClaudeResponse(String json) {

@@ -49,6 +49,22 @@ public class OpenAiClient implements AiClient {
     }
 
     @Override
+    public String generateCompletion(String prompt) {
+        List<ChatMessage> messages = new ArrayList<>();
+        messages.add(new ChatMessage(ChatMessageRole.USER.value(), prompt));
+
+        ChatCompletionRequest request = ChatCompletionRequest.builder()
+                .model(model)
+                .messages(messages)
+                .maxTokens(2000)
+                .temperature(0.3)
+                .build();
+
+        return openAiService.createChatCompletion(request)
+                .getChoices().get(0).getMessage().getContent().trim();
+    }
+
+    @Override
     public void testConnection() {
         List<ChatMessage> messages = new ArrayList<>();
         messages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), "Return exactly 'pong'."));

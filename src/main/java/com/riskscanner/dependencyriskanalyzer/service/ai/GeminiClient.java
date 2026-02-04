@@ -53,6 +53,36 @@ public class GeminiClient implements AiClient {
     }
 
     @Override
+    public String generateCompletion(String prompt) {
+        String requestBody = String.format("""
+                {
+                  "contents": [{
+                    "parts":[{
+                      "text":"%s"
+                    }]
+                  }]
+                }
+                """, prompt.replace("\"", "\\\"").replace("\n", "\\n"));
+        
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + apiKey))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                .timeout(Duration.ofSeconds(60))
+                .build();
+
+        try {
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() / 100 != 2) {
+                throw new IllegalStateException("Gemini API error: " + response.statusCode() + " " + response.body());
+            }
+            return parseGeminiTextResponse(response.body());
+        } catch (Exception e) {
+            throw new IllegalStateException("Gemini request failed: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
     public void testConnection() {
         String testBody = """
                 {
@@ -161,6 +191,22 @@ public class GeminiClient implements AiClient {
             return mapper.writeValueAsString(payload);
         } catch (Exception e) {
             throw new IllegalStateException("Failed to build Gemini request JSON", e);
+        }
+    }
+
+    private String parseGeminiTextResponse(String json) {
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            com.fasterxml.jackson.databind.JsonNode root = mapper.readTree(json);
+            return root.path("candidates")
+                    .get(0)
+                    .path("content")
+                    .path("parts")
+                    .get(0)
+                    .path("text")
+                    .asText();
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to parse Gemini response: " + e.getMessage(), e);
         }
     }
 

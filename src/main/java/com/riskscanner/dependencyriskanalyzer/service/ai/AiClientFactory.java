@@ -1,5 +1,6 @@
 package com.riskscanner.dependencyriskanalyzer.service.ai;
 
+import com.riskscanner.dependencyriskanalyzer.service.AiSettingsService;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
@@ -25,8 +26,10 @@ public class AiClientFactory {
 
     private final String ollamaBaseUrl;
     private final String azureOpenAiEndpoint;
+    private final AiSettingsService aiSettingsService;
 
-    public AiClientFactory() {
+    public AiClientFactory(AiSettingsService aiSettingsService) {
+        this.aiSettingsService = aiSettingsService;
         this.ollamaBaseUrl = "http://localhost:11434";
         this.azureOpenAiEndpoint = "";
     }
@@ -55,5 +58,21 @@ public class AiClientFactory {
             }
             default -> throw new IllegalArgumentException("Unsupported AI provider: " + provider);
         };
+    }
+
+    /**
+     * Creates an AI client using the configured settings.
+     *
+     * @return configured AI client
+     * @throws IllegalStateException if AI is not configured
+     */
+    public AiClient getClient() {
+        var settings = aiSettingsService.getSettings();
+        if (!settings.configured()) {
+            throw new IllegalStateException("AI is not configured");
+        }
+
+        String apiKey = aiSettingsService.getApiKeyOrThrow();
+        return create(settings.provider(), apiKey, settings.model());
     }
 }

@@ -25,6 +25,15 @@ public interface AiClient {
     DependencyRiskAnalysisResult analyzeDependencyRisk(DependencyCoordinate dependency, DependencyEnrichmentDto enrichment);
 
     /**
+     * Generates text completion for a given prompt.
+     *
+     * @param prompt the prompt to send to the AI
+     * @return generated text response
+     * @throws IllegalStateException if the provider/model/key is invalid or unreachable
+     */
+    String generateCompletion(String prompt);
+
+    /**
      * Performs a lightweight request to validate the API key and model.
      *
      * @throws IllegalStateException if the provider/model/key is invalid or unreachable
