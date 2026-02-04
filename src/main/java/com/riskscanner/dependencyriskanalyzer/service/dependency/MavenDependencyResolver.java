@@ -167,17 +167,18 @@ public class MavenDependencyResolver implements DependencyResolver {
             boolean direct
     ) {
         Artifact artifact = aetherNode.getArtifact();
-        DependencyCoordinate coordinate = new DependencyCoordinate(
-                artifact.getGroupId(),
-                artifact.getArtifactId(),
-                artifact.getVersion(),
-                "maven"
-        );
-
         String scope = "compile";
         if (aetherNode.getDependency() != null && aetherNode.getDependency().getScope() != null) {
             scope = aetherNode.getDependency().getScope();
         }
+        
+        DependencyCoordinate coordinate = new DependencyCoordinate(
+                artifact.getGroupId(),
+                artifact.getArtifactId(),
+                artifact.getVersion(),
+                "maven",
+                scope
+        );
 
         DependencyNode node = new DependencyNode(coordinate, scope, pathFromRoot, direct, ResolutionConfidence.HIGH);
 
