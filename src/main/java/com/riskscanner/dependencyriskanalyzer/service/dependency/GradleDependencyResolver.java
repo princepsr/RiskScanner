@@ -181,13 +181,11 @@ public class GradleDependencyResolver implements DependencyResolver {
                 String artifactId = matcher.group(2);
                 String version = matcher.group(3);
                 
-                // Create dependency coordinate
-                DependencyCoordinate coordinate = new DependencyCoordinate(
-                    groupId, artifactId, version, "gradle"
-                );
-                
                 // Determine scope based on configuration
                 String scope = mapConfigurationToScope(configuration);
+                
+                // Create dependency coordinate
+                DependencyCoordinate coordinate = new DependencyCoordinate(groupId, artifactId, version, "gradle", scope);
                 
                 // Build path from root
                 List<String> currentPath = new ArrayList<>();
