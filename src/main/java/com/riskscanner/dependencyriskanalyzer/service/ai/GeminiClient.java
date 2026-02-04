@@ -126,15 +126,42 @@ public class GeminiClient implements AiClient {
         prompt.append("  \"recommendations\": [string]\n");
         prompt.append("}");
 
-        return """
-                {
-                  "contents": [{
-                    "parts":[{
-                      "text":"You are a software supply-chain security expert. You must respond with STRICT JSON only (no markdown, no code fences).\n\n""" + prompt + """
-                    }]
-                  }]
-                }
-                """;
+        String systemMessage = "You are a software supply-chain security expert. You must respond with STRICT JSON only (no markdown, no code fences).";
+        String fullPrompt = systemMessage + "\n\n" + prompt;
+
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            com.fasterxml.jackson.databind.node.ObjectNode payload = mapper.createObjectNode();
+            com.fasterxml.jackson.databind.node.ArrayNode contents = payload.putArray("contents");
+            com.fasterxml.jackson.databind.node.ObjectNode contentNode = contents.addObject();
+            com.fasterxml.jackson.databind.node.ArrayNode parts = contentNode.putArray("parts");
+            com.fasterxml.jackson.databind.node.ObjectNode partNode = parts.addObject();
+            partNode.put("text", fullPrompt);
+
+            com.fasterxml.jackson.databind.node.ObjectNode generationConfig = payload.putObject("generationConfig");
+            generationConfig.put("responseMimeType", "application/json");
+            com.fasterxml.jackson.databind.node.ObjectNode schema = generationConfig.putObject("responseJsonSchema");
+            schema.put("type", "object");
+            com.fasterxml.jackson.databind.node.ObjectNode properties = schema.putObject("properties");
+            com.fasterxml.jackson.databind.node.ObjectNode riskLevelProp = properties.putObject("riskLevel");
+            riskLevelProp.put("type", "string");
+            riskLevelProp.put("description", "Risk level: HIGH, MEDIUM, LOW, or UNKNOWN");
+            com.fasterxml.jackson.databind.node.ObjectNode riskScoreProp = properties.putObject("riskScore");
+            riskScoreProp.put("type", "integer");
+            riskScoreProp.put("description", "Risk score from 0 to 100");
+            com.fasterxml.jackson.databind.node.ObjectNode explanationProp = properties.putObject("explanation");
+            explanationProp.put("type", "string");
+            explanationProp.put("description", "Plain-English explanation of the risk");
+            com.fasterxml.jackson.databind.node.ObjectNode recommendationsProp = properties.putObject("recommendations");
+            recommendationsProp.put("type", "array");
+            com.fasterxml.jackson.databind.node.ObjectNode recItems = recommendationsProp.putObject("items");
+            recItems.put("type", "string");
+            schema.putArray("required").add("riskLevel").add("explanation");
+
+            return mapper.writeValueAsString(payload);
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to build Gemini request JSON", e);
+        }
     }
 
     private DependencyRiskAnalysisResult parseGeminiResponse(String json) {
