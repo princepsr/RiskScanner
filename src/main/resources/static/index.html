@@ -1,343 +1,405 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Risk Scanner</title>
-  <style>
-    body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; margin: 0; background: #0b1220; color: #e8edf6; }
-    .container { max-width: 1100px; margin: 0 auto; padding: 28px 18px 48px; }
-    h1 { margin: 0 0 18px; font-size: 26px; }
-    .grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
-    @media (min-width: 900px) { .grid { grid-template-columns: 1fr 1fr; } }
-    .card { background: #0f1a33; border: 1px solid #243458; border-radius: 12px; padding: 14px; }
-    .row { display: grid; grid-template-columns: 140px 1fr; gap: 10px; align-items: center; margin: 10px 0; }
-    label { color: #b8c6e6; font-size: 13px; }
-    input, select { width: 100%; padding: 10px 10px; border-radius: 10px; border: 1px solid #2b3b64; background: #0b1220; color: #e8edf6; }
-    button { background: #4f7cff; border: 0; color: white; padding: 10px 12px; border-radius: 10px; cursor: pointer; font-weight: 600; }
-    button.secondary { background: #1e2d52; border: 1px solid #2b3b64; }
-    button.danger { background: #ff4f6d; }
-    .buttons { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
-    .status { margin-top: 10px; font-size: 13px; color: #b8c6e6; white-space: pre-wrap; }
-    table { width: 100%; border-collapse: collapse; margin-top: 14px; }
-    th, td { border-bottom: 1px solid #243458; padding: 10px 8px; text-align: left; font-size: 13px; vertical-align: top; }
-    th { color: #b8c6e6; font-weight: 700; }
-    .pill { display: inline-block; padding: 3px 8px; border-radius: 999px; font-weight: 700; font-size: 12px; }
-    .pill.HIGH { background: rgba(255,79,109,0.2); color: #ff8aa0; border: 1px solid rgba(255,79,109,0.4); }
-    .pill.MEDIUM { background: rgba(255,190,75,0.18); color: #ffd79a; border: 1px solid rgba(255,190,75,0.35); }
-    .pill.LOW { background: rgba(80,220,150,0.16); color: #98f0c6; border: 1px solid rgba(80,220,150,0.3); }
-    .pill.UNKNOWN { background: rgba(160,170,190,0.18); color: #d0d6e2; border: 1px solid rgba(160,170,190,0.35); }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
-  </style>
+  <meta name="description" content="Dependency Vulnerability Analysis for Java Projects">
+  <link rel="stylesheet" href="/styles.css">
 </head>
+
 <body>
-  <div class="container">
-    <h1>Risk Scanner</h1>
+  <div class="app-shell">
+    <header class="app-header" role="banner">
+      <div class="app-header__inner">
+        <div class="app-header__brand">
+          <h1 class="app-header__title">Risk Scanner</h1>
+          <p class="app-header__subtitle">Dependency Vulnerability Analysis for Java Projects</p>
+        </div>
+        <div class="app-header__status" aria-live="polite">
+          <span id="appStatus" class="status-chip status-chip--idle">Idle</span>
+        </div>
+      </div>
+    </header>
 
-    <div class="grid">
-      <div class="card">
-        <h2 style="margin:0 0 10px; font-size:16px; color:#e8edf6;">AI Connection Setup</h2>
-        <div class="row">
-          <label>Provider</label>
-          <select id="provider" onchange="updateModelPlaceholder()">
-            <option value="openai">OpenAI</option>
-            <option value="gemini">Google Gemini</option>
-            <option value="claude">Anthropic Claude</option>
-            <option value="ollama">Ollama (local)</option>
-            <option value="azure-openai">Azure OpenAI</option>
-          </select>
+    <main class="app-main" role="main">
+      <div class="app-grid" aria-label="Scanner workspace">
+        <section class="panel panel--left" aria-labelledby="panelLeftTitle">
+          <header class="panel__header">
+            <h2 id="panelLeftTitle" class="panel__title">Input &amp; Configuration</h2>
+          </header>
+
+          <div class="panel__body">
+            <section class="card" aria-labelledby="buildToolTitle">
+              <div class="card__title-row">
+                <h3 id="buildToolTitle" class="card__title">Build tool</h3>
+                <button class="tooltip" type="button" aria-label="Gradle limitation info" data-tooltip="Gradle analysis is best-effort and medium confidence in v1">i</button>
+              </div>
+
+              <div class="radio-group" role="radiogroup" aria-label="Build tool selection">
+                <label class="radio">
+                  <input type="radio" name="buildTool" id="buildToolMaven" value="maven" checked>
+                  <span>Maven</span>
+                </label>
+                <label class="radio">
+                  <input type="radio" name="buildTool" id="buildToolGradle" value="gradle">
+                  <span>Gradle</span>
+                </label>
+              </div>
+
+              <div class="form-row">
+                <label class="form-label" for="buildFileContent">Project path</label>
+                <textarea class="form-textarea" id="buildFileContent" name="buildFileContent" rows="2" spellcheck="false" autocomplete="off" placeholder=""></textarea>
+              </div>
+
+              <div class="meta-row" aria-label="Project path input metadata">
+                <div class="meta-row__left">
+                  <span class="meta" id="buildFileCharCount">0 characters</span>
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button type="button" id="analyzeDependencies" class="btn btn--primary">
+                  <span class="btn__icon">🔍</span>
+                  <span>Analyze Dependencies</span>
+                </button>
+                <button type="button" id="clearBuildFile" class="btn btn--ghost" style="margin-left: 8px;">
+                  <span class="btn__icon">🗑️</span>
+                  <span>Clear</span>
+                </button>
+              </div>
+
+              <!-- Transparency & Security Information -->
+              <div class="transparency-section">
+                <details class="transparency-details" open>
+                  <summary class="transparency-summary">
+                    <span>How This Scan Works</span>
+                    <svg class="transparency-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </summary>
+                  <div class="transparency-content">
+                    <h4>Maven vs Gradle Analysis</h4>
+                    <p>Maven provides high-confidence analysis with complete dependency resolution. Gradle analysis is best-effort due to its dynamic nature, which may result in some limitations.</p>
+                    
+                    <h4>Vulnerability Sources</h4>
+                    <p>We check against multiple vulnerability databases including NVD, GitHub Advisories, and OSV to provide comprehensive coverage.</p>
+                    
+                    <h4>AI-Powered Analysis</h4>
+                    <p>When enabled, AI helps contextualize findings by analyzing vulnerability patterns and potential impacts specific to your project.</p>
+                  </div>
+                </details>
+
+                <details class="transparency-details">
+                  <summary class="transparency-summary">
+                    <span>Known Limitations</span>
+                    <svg class="transparency-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </summary>
+                  <div class="transparency-content">
+                    <ul>
+                      <li>Gradle's dynamic nature may result in some false positives/negatives</li>
+                      <li>Multi-module projects may have incomplete dependency graphs</li>
+                      <li>Custom dependency resolution rules may affect results</li>
+                      <li>Indirect vulnerabilities may not always be detected</li>
+                      <li>Version ranges may not be fully evaluated</li>
+                    </ul>
+                  </div>
+                </details>
+
+                <details class="transparency-details">
+                  <summary class="transparency-summary">
+                    <span>Data Privacy Notice</span>
+                    <svg class="transparency-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </summary>
+                  <div class="transparency-content">
+                    <h4>Local Processing</h4>
+                    <p>Your build file and dependency tree are processed locally in your browser. No project code or sensitive information is sent to our servers.</p>
+                    
+                    <h4>AI Processing (if enabled)</h4>
+                    <p>When AI analysis is enabled, only the following information is sent to the AI provider:</p>
+                    <ul>
+                      <li>Dependency names and versions</li>
+                      <li>Vulnerability details from public databases</li>
+                      <li>No application code or proprietary information is shared</li>
+                    </ul>
+                    
+                    <p class="muted">We do not store any of your data permanently.</p>
+                  </div>
+                </details>
+              </div>
+
+              <p class="context-note" id="gradleNote" hidden>Gradle analysis is best-effort and medium confidence in v1</p>
+            </section>
+
+            <section class="card card--optional" aria-labelledby="aiOptionalTitle">
+              <div class="card__title-row">
+                <h3 id="aiOptionalTitle" class="card__title">AI configuration (optional)</h3>
+                <label class="toggle" for="enableAI">
+                  <input id="enableAI" type="checkbox">
+                  <span>Enable AI-assisted analysis</span>
+                </label>
+              </div>
+
+              <p class="helper">AI is optional. Core vulnerability detection works without it.</p>
+
+              <fieldset class="optional-fieldset" id="aiFieldset" disabled>
+                <div class="form-row">
+                  <label class="form-label" for="aiProvider">Provider</label>
+                  <select class="form-select" id="aiProvider" name="aiProvider">
+                    <option value="openai" selected>OpenAI</option>
+                    <option value="claude">Claude</option>
+                    <option value="gemini">Gemini</option>
+                    <option value="ollama">Ollama</option>
+                    <option value="azure">Azure</option>
+                  </select>
+                </div>
+
+                <div class="form-row">
+                  <label class="form-label" for="aiApiKey">API key</label>
+                  <input class="form-input" id="aiApiKey" name="aiApiKey" type="password" placeholder="(not stored)" autocomplete="off">
+                </div>
+              </fieldset>
+            </section>
+
+            
+          </div>
+        </section>
+
+        <section class="panel panel--right" aria-labelledby="panelRightTitle">
+          <header class="panel__header">
+            <h2 id="panelRightTitle" class="panel__title">Results &amp; Analysis</h2>
+          </header>
+
+          <div class="panel__body">
+            <section class="card" aria-labelledby="overviewTitle">
+              <div class="card__title-row">
+                <h3 id="overviewTitle" class="card__title">Results overview</h3>
+                <div class="overview__right">
+                  <span class="badge badge--confidence" id="confidenceBadge" data-tooltip="Confidence reflects how reliably we can parse and resolve dependencies for the selected build tool.">--</span>
+                </div>
+              </div>
+
+              <div id="overviewEmpty" class="empty-state" role="status" aria-live="polite">
+                <div class="empty-state__title">No scan yet</div>
+                <div class="empty-state__body">Paste a build file and run <span class="mono">Analyze Dependencies</span> to generate results.</div>
+              </div>
+
+              <div id="overviewContent" hidden>
+                <div class="overview-grid" aria-label="Summary cards">
+                  <div class="kpi kpi--neutral" aria-label="Total dependencies">
+                    <div class="kpi__k">Total dependencies</div>
+                    <div class="kpi__v mono" id="kpiTotalDependencies">--</div>
+                  </div>
+                  <div class="kpi kpi--neutral" aria-label="Vulnerabilities found">
+                    <div class="kpi__k">Vulnerabilities found</div>
+                    <div class="kpi__v mono" id="kpiVulnsFound">--</div>
+                  </div>
+                  <div class="kpi kpi--bad" aria-label="Critical">
+                    <div class="kpi__k">Critical</div>
+                    <div class="kpi__v mono" id="kpiCritical">--</div>
+                  </div>
+                  <div class="kpi kpi--warn" aria-label="High">
+                    <div class="kpi__k">High</div>
+                    <div class="kpi__v mono" id="kpiHigh">--</div>
+                  </div>
+                  <div class="kpi kpi--mid" aria-label="Medium">
+                    <div class="kpi__k">Medium</div>
+                    <div class="kpi__v mono" id="kpiMedium">--</div>
+                  </div>
+                  <div class="kpi kpi--good" aria-label="Low">
+                    <div class="kpi__k">Low</div>
+                    <div class="kpi__v mono" id="kpiLow">--</div>
+                  </div>
+                  <div class="kpi kpi--neutral" aria-label="Overall risk score">
+                    <div class="kpi__k">Overall risk score</div>
+                    <div class="kpi__v mono" id="kpiOverallRisk">--</div>
+                  </div>
+                </div>
+
+                <div class="overview-meta" aria-label="Scan metadata">
+                  <div class="overview-meta__row">
+                    <span class="overview-meta__k">Build tool</span>
+                    <span class="overview-meta__v mono" id="metaBuildTool">--</span>
+                  </div>
+                  <div class="overview-meta__row">
+                    <span class="overview-meta__k">Timestamp</span>
+                    <span class="overview-meta__v mono" id="metaTimestamp">--</span>
+                  </div>
+                  <div class="overview-meta__row">
+                    <span class="overview-meta__k">Vulnerability sources</span>
+                    <span class="overview-meta__v" id="metaSources">--</span>
+                  </div>
+                </div>
+              </div>
+
+              <p class="muted" id="resultsMeta">No results loaded.</p>
+            </section>
+
+            <section class="card" aria-labelledby="tableTitle">
+              <h3 id="tableTitle" class="card__title">Findings</h3>
+              <div id="gradleWarning" class="alert alert--warning" hidden>
+                <svg class="alert__icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <div class="alert__content">
+                  <strong>Note:</strong> Some vulnerabilities may be false positives due to Gradle resolution limitations. 
+                  Review all findings carefully.
+                </div>
+              </div>
+              
+              <div class="confidence-legend">
+                <div class="confidence-legend__item">
+                  <span class="confidence-legend__badge confidence-legend__badge--high">HIGH</span>
+                  <span class="confidence-legend__label">High confidence - Direct match in dependency tree</span>
+                </div>
+                <div class="confidence-legend__item">
+                  <span class="confidence-legend__badge confidence-legend__badge--medium">MEDIUM</span>
+                  <span class="confidence-legend__label">Medium confidence - Potential match, review recommended</span>
+                </div>
+                <div class="confidence-legend__item">
+                  <span class="confidence-legend__badge confidence-legend__badge--low">LOW</span>
+                  <span class="confidence-legend__label">Low confidence - Possible false positive</span>
+                </div>
+              </div>
+              
+              <div class="filters" aria-label="Finding filters">
+                <div class="filters__row">
+                  <div class="filters__group">
+                    <label class="form-label" for="filterSeverity">Severity</label>
+                    <select class="form-select" id="filterSeverity" name="filterSeverity">
+                      <option value="all" selected>All</option>
+                      <option value="CRITICAL">Critical</option>
+                      <option value="HIGH">High</option>
+                      <option value="MEDIUM">Medium</option>
+                      <option value="LOW">Low</option>
+                    </select>
+                  </div>
+
+                  <div class="filters__group">
+                    <label class="form-label" for="filterDirectness">Directness</label>
+                    <select class="form-select" id="filterDirectness" name="filterDirectness">
+                      <option value="all" selected>All</option>
+                      <option value="direct">Direct</option>
+                      <option value="transitive">Transitive</option>
+                    </select>
+                  </div>
+
+                  <div class="filters__group">
+                    <label class="form-label" for="filterConfidence">Confidence</label>
+                    <select class="form-select" id="filterConfidence" name="filterConfidence">
+                      <option value="all" selected>All</option>
+                      <option value="HIGH">High</option>
+                      <option value="MEDIUM">Medium</option>
+                      <option value="LOW">Low</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="filters__row filters__row--right">
+                  <span class="meta" id="findingsCount">0 findings</span>
+                </div>
+              </div>
+
+              <div class="table-wrap" role="region" aria-label="Vulnerability list" tabindex="0">
+                <table class="table" aria-describedby="resultsMeta">
+                  <thead>
+                    <tr>
+                      <th scope="col">Dependency</th>
+                      <th scope="col">Severity</th>
+                      <th scope="col">ID</th>
+                      <th scope="col">Confidence</th>
+                      <th scope="col">Directness</th>
+                      <th scope="col">Details</th>
+                    </tr>
+                  </thead>
+                  <tbody id="resultsBody">
+                    <tr>
+                      <td class="mono" colspan="6">Run an analysis to populate findings.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="card" aria-labelledby="analysisTitle">
+              <h3 id="analysisTitle" class="card__title">Analysis</h3>
+              <div class="placeholder" id="analysisPlaceholder">
+                <p class="muted">Charts / timeline / remediation guidance will render here.</p>
+              </div>
+            </section>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="app-footer" role="contentinfo">
+      <div class="app-footer__inner">
+        <span class="app-footer__version">v1.0.0</span>
+        <span class="app-footer__divider" aria-hidden="true">|</span>
+        <span class="app-footer__disclaimer">Results are advisory, not a substitute for manual security review</span>
+      </div>
+    </footer>
+  </div>
+
+  <div class="modal" id="detailsModal" hidden>
+    <div class="modal__backdrop" data-close="true" aria-hidden="true"></div>
+    <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="detailsTitle">
+      <div class="modal__header">
+        <div class="modal__title-wrap">
+          <div class="modal__title" id="detailsTitle">Finding details</div>
+          <div class="modal__subtitle mono" id="detailsDependency">--</div>
         </div>
-        <div class="row">
-          <label>Model</label>
-          <input id="model" placeholder="gpt-4o" value="gpt-4o" />
-        </div>
-        <div class="row">
-          <label>API Key</label>
-          <input id="apiKey" placeholder="sk-..." type="password" />
-        </div>
-        <div class="buttons">
-          <button id="saveSettings">Save Settings</button>
-          <button class="secondary" id="testConnection">Test Connection</button>
-          <button class="secondary" id="loadSettings">Load Settings</button>
-        </div>
-        <div class="status" id="aiStatus"></div>
+        <button class="btn btn--ghost" type="button" id="closeDetails" aria-label="Close">Close</button>
       </div>
 
-      <div class="card">
-        <h2 style="margin:0 0 10px; font-size:16px; color:#e8edf6;">Project</h2>
-        <div class="row">
-          <label>Project Path</label>
-          <input id="projectPath" placeholder="C:\\path\\to\\project (folder)" />
+      <div class="modal__body">
+        <div class="details-chips" aria-label="Finding tags">
+          <span class="pill pill--severity" id="detailsSeverity">--</span>
+          <span class="pill" id="detailsId">--</span>
+          <span class="pill" id="detailsConfidence">Confidence: --</span>
+          <span class="pill" id="detailsDirectness">--</span>
+          <span class="pill" id="detailsSource">Source: --</span>
         </div>
-        <div class="row">
-          <label>Force Refresh</label>
-          <select id="forceRefresh">
-            <option value="false">false</option>
-            <option value="true">true</option>
-          </select>
-        </div>
-        <div class="buttons">
-          <button id="scan">Scan</button>
-          <button id="analyze">Analyze</button>
-          <button class="secondary" id="loadCached">Load Cached</button>
-          <button class="secondary" id="exportJson">Export JSON</button>
-          <button class="secondary" id="exportPdf">Export PDF</button>
-        </div>
-        <div class="status" id="projectStatus"></div>
-      </div>
-    </div>
 
-    <div class="card" style="margin-top:14px;">
-      <h2 style="margin:0 0 10px; font-size:16px; color:#e8edf6;">Results</h2>
-      <div id="resultsMeta" class="status"></div>
-      <div style="overflow:auto;">
-        <table>
-          <thead>
-            <tr>
-              <th>Dependency</th>
-              <th>Risk</th>
-              <th>Score</th>
-              <th>Explanation</th>
-              <th>Recommendations</th>
-              <th>Cache</th>
-            </tr>
-          </thead>
-          <tbody id="resultsBody"></tbody>
-        </table>
+        <section class="details-section" aria-labelledby="descTitle">
+          <h4 class="details-section__title" id="descTitle">Description</h4>
+          <p class="details-section__text" id="detailsDescription">--</p>
+        </section>
+
+        <section class="details-section" aria-labelledby="affectedTitle">
+          <h4 class="details-section__title" id="affectedTitle">Affected versions</h4>
+          <div class="code-block" id="detailsAffected">--</div>
+        </section>
+
+        <section class="details-section" aria-labelledby="pathTitle">
+          <h4 class="details-section__title" id="pathTitle">Dependency path</h4>
+          <pre class="dep-tree" id="detailsPath">--</pre>
+        </section>
+
+        <section class="details-section" aria-labelledby="explainTitle">
+          <div class="details-section__title-row">
+            <h4 class="details-section__title" id="explainTitle">Risk explanation</h4>
+            <span class="explain-badge" id="detailsExplainType">--</span>
+          </div>
+          <p class="details-section__text" id="detailsExplanation">--</p>
+        </section>
       </div>
     </div>
   </div>
 
-  <script>
-    const $ = (id) => document.getElementById(id);
+  <div class="overlay" id="loadingOverlay" hidden>
+    <div class="overlay__card" role="status" aria-live="polite">
+      <div class="spinner" aria-hidden="true"></div>
+      <div class="overlay__text" id="loadingText">Working...</div>
+    </div>
+  </div>
 
-    // Update model placeholder and example based on provider selection
-    function updateModelPlaceholder() {
-      const provider = $("provider").value;
-      const modelInput = $("model");
-      const examples = {
-        "openai": "gpt-4o",
-        "gemini": "gemini-1.5-flash",
-        "claude": "claude-3-5-haiku-20241022",
-        "ollama": "llama3.2",
-        "azure-openai": "gpt-4o"
-      };
-      modelInput.placeholder = examples[provider] || "model-name";
-      if (!modelInput.value || modelInput.value === "gpt-4o") {
-        modelInput.value = examples[provider] || "";
-      }
-    }
-
-    function setStatus(el, text) {
-      el.textContent = text || "";
-    }
-
-    function renderResults(results, meta) {
-      const body = $("resultsBody");
-      body.innerHTML = "";
-      $("resultsMeta").textContent = meta || "";
-
-      (results || []).forEach(r => {
-        const tr = document.createElement('tr');
-        const dep = `${r.groupId}:${r.artifactId}:${r.version}`;
-        const recs = (r.recommendations || []).map(x => `- ${x}`).join("\n");
-        tr.innerHTML = `
-          <td class="mono">${escapeHtml(dep)}</td>
-          <td><span class="pill ${r.riskLevel || 'UNKNOWN'}">${r.riskLevel || 'UNKNOWN'}</span></td>
-          <td>${r.riskScore ?? ""}</td>
-          <td>${escapeHtml(r.explanation || "")}</td>
-          <td class="mono" style="white-space:pre-wrap;">${escapeHtml(recs)}</td>
-          <td>${r.fromCache ? "yes" : "no"}</td>
-        `;
-        body.appendChild(tr);
-      });
-    }
-
-    function escapeHtml(s) {
-      return String(s)
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#039;');
-    }
-
-    async function jsonFetch(url, options) {
-      const res = await fetch(url, {
-        headers: { 'Content-Type': 'application/json' },
-        ...options,
-      });
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`${res.status} ${res.statusText}: ${text}`);
-      }
-      const ct = res.headers.get('content-type') || '';
-      if (ct.includes('application/json')) return await res.json();
-      return await res.text();
-    }
-
-    async function downloadPostJson(url, body, filename) {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`${res.status} ${res.statusText}: ${text}`);
-      }
-      const blob = await res.blob();
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = filename || 'risk-report.json';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(a.href);
-    }
-
-    async function downloadPost(url, body, filename) {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`${res.status} ${res.statusText}: ${text}`);
-      }
-      const blob = await res.blob();
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = filename || 'download';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(a.href);
-    }
-
-    $("loadSettings").addEventListener('click', async () => {
-      try {
-        setStatus($("aiStatus"), "Loading settings...");
-        const s = await jsonFetch('/api/ai/settings', { method: 'GET' });
-        $("provider").value = s.provider || 'openai';
-        $("model").value = s.model || 'gpt-4o';
-        $("apiKey").value = '';
-        setStatus($("aiStatus"), `Loaded. configured=${s.configured} updatedAt=${s.updatedAt || ''}`);
-      } catch (e) {
-        setStatus($("aiStatus"), e.message);
-      }
-    });
-
-    $("saveSettings").addEventListener('click', async () => {
-      try {
-        setStatus($("aiStatus"), "Saving...");
-        const payload = {
-          provider: $("provider").value,
-          model: $("model").value,
-          apiKey: $("apiKey").value,
-        };
-        const s = await jsonFetch('/api/ai/settings', { method: 'PUT', body: JSON.stringify(payload) });
-        $("apiKey").value = '';
-        setStatus($("aiStatus"), `Saved. provider=${s.provider} model=${s.model} updatedAt=${s.updatedAt || ''}`);
-      } catch (e) {
-        setStatus($("aiStatus"), e.message);
-      }
-    });
-
-    $("testConnection").addEventListener('click', async () => {
-      try {
-        setStatus($("aiStatus"), "Testing...");
-        const r = await jsonFetch('/api/ai/test-connection', { method: 'POST' });
-        setStatus($("aiStatus"), `Test OK: ${r}`);
-      } catch (e) {
-        setStatus($("aiStatus"), e.message);
-      }
-    });
-
-    $("scan").addEventListener('click', async () => {
-      try {
-        setStatus($("projectStatus"), "Scanning...");
-        const p = encodeURIComponent($("projectPath").value);
-        const deps = await jsonFetch(`/api/project/scan?projectPath=${p}`, { method: 'GET' });
-        renderResults((deps || []).map(d => ({
-          groupId: d.groupId,
-          artifactId: d.artifactId,
-          version: d.version,
-          riskLevel: 'UNKNOWN',
-          explanation: '',
-          recommendations: [],
-          fromCache: false,
-          buildTool: d.buildTool,
-        })), `Scanned ${deps.length} dependencies.`);
-        setStatus($("projectStatus"), `Scan complete: ${deps.length} dependencies`);
-      } catch (e) {
-        setStatus($("projectStatus"), e.message);
-      }
-    });
-
-    $("analyze").addEventListener('click', async () => {
-      try {
-        setStatus($("projectStatus"), "Analyzing...");
-        const payload = {
-          projectPath: $("projectPath").value,
-          forceRefresh: $("forceRefresh").value === 'true',
-        };
-        const r = await jsonFetch('/api/project/analyze', { method: 'POST', body: JSON.stringify(payload) });
-        renderResults(r.results || [], `Analyzed at ${r.analyzedAt || ''}`);
-        setStatus($("projectStatus"), `Analyze complete: ${(r.results || []).length} results`);
-      } catch (e) {
-        setStatus($("projectStatus"), e.message);
-      }
-    });
-
-    $("loadCached").addEventListener('click', async () => {
-      try {
-        setStatus($("projectStatus"), "Loading cached results...");
-        const r = await jsonFetch('/api/dashboard/cached-results', { method: 'GET' });
-        renderResults(r || [], `Cached results: ${(r || []).length}`);
-        setStatus($("projectStatus"), `Loaded ${(r || []).length} cached results`);
-      } catch (e) {
-        setStatus($("projectStatus"), e.message);
-      }
-    });
-
-    $("exportJson").addEventListener('click', async () => {
-      try {
-        setStatus($("projectStatus"), "Exporting...");
-        const payload = {
-          projectPath: $("projectPath").value,
-          forceRefresh: false,
-        };
-        await downloadPostJson('/api/export/json', payload, 'risk-report.json');
-        setStatus($("projectStatus"), "Exported JSON");
-      } catch (e) {
-        setStatus($("projectStatus"), e.message);
-      }
-    });
-
-    $("exportPdf").addEventListener('click', async () => {
-      try {
-        setStatus($("projectStatus"), "Exporting...");
-        const payload = {
-          projectPath: $("projectPath").value,
-          forceRefresh: false,
-        };
-        await downloadPost('/api/export/pdf', payload, 'risk-report.pdf');
-        setStatus($("projectStatus"), "Exported PDF");
-      } catch (e) {
-        setStatus($("projectStatus"), e.message);
-      }
-    });
-
-    (async () => {
-      try {
-        const s = await jsonFetch('/api/ai/settings', { method: 'GET' });
-        $("provider").value = s.provider || 'openai';
-        $("model").value = s.model || 'gpt-4o';
-      } catch (_) {
-      }
-    })();
-  </script>
+  <script src="/app.js?v=1" defer></script>
 </body>
 </html>

@@ -22,7 +22,9 @@ import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.spi.connector.RepositoryConnectorFactory;
 import org.eclipse.aether.spi.connector.transport.TransporterFactory;
+import org.eclipse.aether.transport.file.FileTransporterFactory;
 import org.eclipse.aether.transport.http.HttpTransporterFactory;
+import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.springframework.stereotype.Component;
 
@@ -72,11 +74,24 @@ public class MavenDependencyResolver implements DependencyResolver {
             );
 
             // Create root artifact
+            String groupId = model.getGroupId();
+            if (groupId == null || groupId.isBlank()) {
+                groupId = model.getParent() != null ? model.getParent().getGroupId() : groupId;
+            }
+            String version = model.getVersion();
+            if (version == null || version.isBlank()) {
+                version = model.getParent() != null ? model.getParent().getVersion() : version;
+            }
+            String packaging = model.getPackaging();
+            if (packaging == null || packaging.isBlank()) {
+                packaging = "jar";
+            }
+
             Artifact rootArtifact = new DefaultArtifact(
-                model.getGroupId(), 
-                model.getArtifactId(), 
-                model.getPackaging(), 
-                model.getVersion()
+                groupId,
+                model.getArtifactId(),
+                packaging,
+                version
             );
 
             // Collect dependencies
@@ -143,21 +158,8 @@ public class MavenDependencyResolver implements DependencyResolver {
         MavenXpp3Reader reader = new MavenXpp3Reader();
         try (FileReader fileReader = new FileReader(pomFile.toFile())) {
             Model model = reader.read(fileReader);
-            
-            // Build the model to resolve inheritance and variables
-            DefaultModelBuilderFactory factory = new DefaultModelBuilderFactory();
-            ModelBuildingRequest request = new DefaultModelBuildingRequest()
-                .setPomFile(pomFile.toFile())
-                .setProcessPlugins(false)
-                .setValidationLevel(ModelBuildingRequest.VALIDATION_LEVEL_MINIMAL)
-                .setSystemProperties(System.getProperties());
-            
-            try {
-                return factory.newInstance().build(request).getEffectiveModel();
-            } catch (ModelBuildingException e) {
-                // If building fails, return the raw model
-                return model;
-            }
+
+            return model;
         }
     }
 
@@ -191,14 +193,20 @@ public class MavenDependencyResolver implements DependencyResolver {
     }
 
     private RepositorySystem newRepositorySystem() {
-        DefaultServiceLocator locator = new DefaultServiceLocator();
+        DefaultServiceLocator locator = MavenRepositorySystemUtils.newServiceLocator();
         locator.addService(RepositoryConnectorFactory.class, BasicRepositoryConnectorFactory.class);
+        locator.addService(TransporterFactory.class, FileTransporterFactory.class);
         locator.addService(TransporterFactory.class, HttpTransporterFactory.class);
-        return locator.getService(RepositorySystem.class);
+
+        RepositorySystem system = locator.getService(RepositorySystem.class);
+        if (system == null) {
+            throw new IllegalStateException("Failed to initialize Maven Resolver RepositorySystem (service locator returned null)");
+        }
+        return system;
     }
 
     private RepositorySystemSession newRepositorySession(RepositorySystem system) {
-        DefaultRepositorySystemSession session = new DefaultRepositorySystemSession();
+        DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
         LocalRepository localRepo = new LocalRepository(System.getProperty("user.home") + File.separator + ".m2" + File.separator + "repository");
         session.setLocalRepositoryManager(system.newLocalRepositoryManager(session, localRepo));
         return session;
