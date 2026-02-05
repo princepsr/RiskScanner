@@ -218,7 +218,7 @@
                     <div class="kpi__k">Low</div>
                     <div class="kpi__v mono" id="kpiLow">--</div>
                   </div>
-                  <div class="kpi kpi--neutral" aria-label="Overall risk score" data-tooltip="Weighted risk score: Critical(50) + High(30) + Medium(15) + Low(5). Max 100. Higher = more risk.">
+                  <div class="kpi kpi--neutral" aria-label="Overall risk score" data-tooltip="Risk score for current view: Critical=40pts each + boost. 1 Critical min 40, 2 Critical min 60, 3+ Critical min 90. Scale 0-100.">
                     <div class="kpi__k">Overall risk score</div>
                     <div class="kpi__v mono" id="kpiOverallRisk">--</div>
                   </div>
@@ -404,6 +404,7 @@
         <div class="details-chips" aria-label="Finding tags">
           <span class="pill pill--severity" id="detailsSeverity">--</span>
           <span class="pill" id="detailsId">--</span>
+          <span class="pill" id="detailsRiskScore">Risk Score: --</span>
           <span class="pill" id="detailsConfidence">Confidence: --</span>
           <span class="pill" id="detailsDirectness">--</span>
           <span class="pill" id="detailsSource">Source: --</span>

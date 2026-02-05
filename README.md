@@ -1,16 +1,14 @@
 # Risk Scanner
 
-Risk Scanner is a comprehensive vulnerability analysis tool that provides transparent, explainable risk assessments for Java projects. It combines deterministic vulnerability detection with AI-powered explanations to help development teams understand and prioritize security risks.
+Risk Scanner is a Spring Boot application that analyzes Java projects (Maven/Gradle) for dependency vulnerabilities and presents results in a lightweight web UI.
 
 ## What It Does
 
-- **Vulnerability Detection**: Scans Maven and Gradle projects for known vulnerabilities using multiple sources (OSV, NVD, GitHub Advisory, Maven Central)
-- **Risk Scoring**: Calculates contextual risk scores (0-100) based on severity, dependency depth, scope, and exploit maturity
-- **Confidence Assessment**: Provides confidence levels (HIGH/MEDIUM/LOW) based on source reliability and match quality
-- **False Positive Analysis**: Identifies potential false positives based on dependency scope, optional status, and reachability
-- **AI Explanations**: Generates human-friendly explanations of vulnerabilities, their real-world impact, and remediation options
-- **Suppression Management**: Allows auditable vulnerability suppression with detailed reasoning
-- **Local Processing**: All analysis happens locally - no cloud dependencies except for optional AI services
+- **Project analysis**: Scan a project path and analyze dependencies for known vulnerabilities.
+- **Vulnerability enrichment**: Adds vulnerability counts and IDs (best-effort).
+- **Optional AI explanations**: When enabled/configured, AI can generate explanations and recommendations.
+- **Local caching**: Results are cached locally (H2) and can be reloaded via the UI.
+- **Filtering + export**: Filter findings in the UI and export the current view to CSV.
 
 ## Supported Build Tools
 
@@ -21,59 +19,49 @@ Risk Scanner is a comprehensive vulnerability analysis tool that provides transp
 - **Safe Mode**: Native support for controlled execution
 
 ### Gradle
-- **Method**: Controlled execution of Gradle commands in isolated environments
-- **Confidence**: MEDIUM - Parses command output, may miss complex configurations
-- **Features**: Multiple configuration support, dependency depth tracking
-- **Safe Mode**: Requires controlled execution to prevent arbitrary code execution
+- **Method**: Best-effort Gradle analysis (confidence depends on project/build file patterns)
+- **Confidence**: MEDIUM - Gradle builds are dynamic; analysis may be incomplete
+- **Note**: Some false positives/negatives are possible; review Gradle findings carefully
 
 ## Confidence Levels
 
 Confidence levels indicate how reliable the vulnerability detection is:
 
 ### HIGH (80-100)
-- Exact version matches in vulnerability databases
-- Multiple independent sources confirming the vulnerability
-- High-quality vulnerability data (NVD, GitHub Advisory)
+- Typically Maven projects (dependency resolution is more reliable)
 
 ### MEDIUM (50-79)
-- Version range matches
-- Single source confirmation
-- Medium-quality vulnerability data (OSV, Maven Central)
+- Typically Gradle projects (best-effort resolution)
 
 ### LOW (0-49)
-- Fuzzy matches or inferred vulnerabilities
-- Limited source information
-- Potential false positives
+- Possible for uncertain matches (project/build specific)
 
-## Safe Mode vs Full Mode
+## Documentation (Authoritative)
 
-### Safe Mode (Default)
-- **Maven**: Uses Maven Resolver (no code execution)
-- **Gradle**: Parses existing Gradle files without running commands
-- **Protection**: No arbitrary code execution, no network access from build tools
-- **Tradeoff**: May miss vulnerabilities that require build-time resolution
+Start here:
 
-### Full Mode
-- **Maven**: Same as Safe Mode (already safe)
-- **Gradle**: Runs Gradle commands in controlled environments
-- **Capability**: Complete dependency resolution including dynamic dependencies
-- **Risk**: Controlled execution environments mitigate but don't eliminate all risks
+- `docs/README.md`
+
+Key docs:
+
+- `docs/user-guide/getting-started.md`
+- `docs/user-guide/features.md`
+- `docs/user-guide/ui-guide.md`
+- `docs/architecture/risk-scoring.md`
+- `docs/developer/backend/architecture.md`
+- `docs/developer/frontend/architecture.md`
+- `docs/api/endpoints.md`
 
 ## Key Features
 
 - **Dependency Scanning**
   - Maven: `pom.xml` (via Maven Resolver)
-  - Gradle: `build.gradle`, `build.gradle.kts` (via controlled execution)
+  - Gradle: `build.gradle`, `build.gradle.kts` (best-effort)
 - **Multi-Source Vulnerability Detection**
   - OSV (Open Source Vulnerability Database)
   - NVD (National Vulnerability Database)
   - GitHub Advisory Database
   - Maven Central metadata
-- **Risk Assessment**
-  - Contextual risk scoring (0-100 scale)
-  - Confidence level calculation
-  - False positive analysis
-  - Dependency impact assessment
 - **AI-Powered Explanations**
   - Human-friendly vulnerability descriptions
   - Real-world impact analysis
@@ -97,10 +85,7 @@ Confidence levels indicate how reliable the vulnerability detection is:
 
 ## Documentation
 
-- **Architecture**: `docs/ARCHITECTURE.md` - System design and data flow
-- **Security**: `docs/SECURITY.md` - Security considerations and safe usage
-- **Development**: `docs/CONTRIBUTING.md` - How to contribute and extend
-- **Developer Guide**: `docs/DEV_GUIDE.md` - Local setup and development workflow
+- **Docs index**: `docs/README.md`
 
 ## Quick Start (Web)
 
@@ -113,13 +98,12 @@ Confidence levels indicate how reliable the vulnerability detection is:
 2. Open the UI:
 - `http://localhost:8080/`
 
-3. Configure AI (optional but recommended):
-- In the UI, set:
-  - Provider: `openai`, `claude`, `gemini`, or `ollama`
-  - Model: e.g., `gpt-4o-mini`, `claude-3-5-sonnet`, etc.
-  - API key: your AI provider key
+3. (Optional) Configure AI:
 
-The API key is stored **encrypted** in the local database.
+- Toggle on **Enable AI-assisted analysis**
+- Select a provider and enter your API key
+
+If `riskscanner.encryption.secret` is configured, API keys are stored encrypted at rest.
 
 ## Quick Start (Desktop)
 
@@ -164,13 +148,7 @@ Key settings:
 
 ## API Endpoints
 
-### Vulnerability Analysis
-- `GET /api/vulnerabilities/analyze` - Analyze single dependency with optional AI explanations
-- `POST /api/vulnerabilities/analyze-batch` - Analyze multiple dependencies
-- `POST /api/vulnerabilities/suppress` - Suppress a vulnerability with reasoning
-- `POST /api/vulnerabilities/unsuppress` - Unsuppress a vulnerability
-- `GET /api/vulnerabilities/suppressions` - Get active suppressions
-- `GET /api/vulnerabilities/audit-log` - Get suppression audit trail
+Authoritative API documentation is in `docs/api/endpoints.md`.
 
 ### AI Settings
 - `GET /api/ai/settings` – Get current AI provider/model configuration
@@ -190,7 +168,7 @@ Key settings:
 - **Local Processing**: All vulnerability analysis happens locally
 - **No Data Sharing**: Vulnerability data is not sent to external services (except optional AI)
 - **Encrypted Storage**: API keys and sensitive data are encrypted at rest
-- **Controlled Execution**: Gradle commands run in isolated environments
+- **Gradle note**: Gradle projects are analyzed best-effort; results may be incomplete
 - **Audit Trail**: All suppression actions are logged for compliance
 
 ## When False Positives May Occur
@@ -203,19 +181,11 @@ Key settings:
 
 ## How Confidence Level Works
 
-Confidence is calculated based on:
-- **Match Quality**: Exact version (1.0) vs range match (0.8)
-- **Source Reliability**: NVD/GitHub (1.0) vs OSV (0.8) vs Maven Central (0.6)
-- **Cross-Source Confirmation**: Multiple sources increase confidence
-- **ID Format**: Standard formats (CVE, GHSA) increase confidence
+See `docs/user-guide/features.md`.
 
 ## How Scoring Works
 
-Risk Score (0-100) = Weighted sum of:
-- **Severity** (40%): CRITICAL=100, HIGH=80, MEDIUM=60, LOW=40, INFO=20
-- **Dependency Depth** (20%): Direct=100, One level=80, Two levels=60, Deep=40
-- **Scope** (20%): Compile=100, Runtime=80, Provided=60, Test=40, System=20
-- **Exploit Maturity** (20%): PoC=100, Weaponized=80, Theoretical=60, None=40
+See `docs/architecture/risk-scoring.md`.
 
 ## Architecture Tradeoffs
 
@@ -244,9 +214,6 @@ Risk Score (0-100) = Weighted sum of:
 
 - `src/main/java/.../controller` – REST controllers
 - `src/main/java/.../service` – Core business logic and orchestration
-- `src/main/java/.../service/dependency` – Dependency resolution logic
-- `src/main/java/.../service/vulnerability` – Vulnerability detection and analysis
-- `src/main/java/.../service/ai` – AI integration layer
 - `src/main/java/.../model` – Domain models and entities
 - `src/main/java/.../dto` – Request/response DTOs
 - `src/main/resources/static` – Web UI

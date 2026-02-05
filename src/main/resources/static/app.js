@@ -336,9 +336,9 @@ const RiskScanner = (() => {
       const hasFindings = Array.isArray(findings) && findings.length > 0;
       const actualTotal = totalCount !== null ? totalCount : (hasFindings ? findings.length : 0);
       
-      // Update summary
+      // Update summary (from filtered findings for KPI counts)
       const summary = this.computeSummary(findings);
-      this.updateSummary(summary);
+      this.updateSummary(summary, State.allFindings);
       
       // Render findings
       this.renderFindings(findings);
@@ -528,11 +528,12 @@ const RiskScanner = (() => {
       DOM.setText(DOM.get('kpiLow'), low);
       DOM.setText(DOM.get('kpiTotalDependencies'), total);
       DOM.setText(DOM.get('kpiVulnsFound'), total);
-      // Weighted risk score: critical=50, high=30, medium=15, low=5, capped at 100
-      const weightedScore = Math.min(100, critical * 50 + high * 30 + medium * 15 + low * 5);
-      DOM.setText(DOM.get('kpiOverallRisk'), weightedScore);
       
-      // Update overall status
+      // Calculate Overall Risk Score from CURRENT VIEW (filtered findings)
+      const riskScore = this.calculateRealisticRiskScore(critical, high, medium, low);
+      DOM.setText(DOM.get('kpiOverallRisk'), riskScore);
+      
+      // Update overall status based on current view
       const statusEl = DOM.get('appStatus');
       
       if (total === 0) {
@@ -551,6 +552,49 @@ const RiskScanner = (() => {
         statusEl.className = 'status-chip status-chip--low';
         statusEl.textContent = 'Low Risk';
       }
+    },
+    
+    calculateRealisticRiskScore(critical, high, medium, low) {
+      // Weighted impact values (Critical disproportionately higher)
+      const weights = { critical: 40, high: 15, medium: 5, low: 1 };
+      
+      // Calculate raw weighted score
+      const rawScore = critical * weights.critical + 
+                       high * weights.high + 
+                       medium * weights.medium + 
+                       low * weights.low;
+      
+      // "Worst case" reference: 5 Critical, 15 High, 30 Medium, 50 Low
+      const maxRawScore = 5 * weights.critical + 15 * weights.high + 30 * weights.medium + 50 * weights.low;
+      
+      // Normalize to 0-70 base scale (leaving room for critical dominance boost)
+      let normalizedScore = (rawScore / maxRawScore) * 70;
+      
+      // Critical dominance: non-linear boost based on critical count
+      // 1 Critical = minimum 40 (high risk floor)
+      // 2 Critical = minimum 60
+      // 3 Critical = minimum 75
+      // 4+ Critical = minimum 90
+      const criticalBoost = critical >= 4 ? 35 : 
+                            critical === 3 ? 25 : 
+                            critical === 2 ? 15 : 
+                            critical === 1 ? 10 : 0;
+      
+      // Calculate final score
+      let finalScore = Math.min(100, normalizedScore + criticalBoost);
+      
+      // Guardrails
+      if (critical > 0 && finalScore < 40) {
+        finalScore = 40; // Critical presence guarantees at least 40
+      }
+      if (critical >= 2 && finalScore < 60) {
+        finalScore = 60; // Multiple criticals guarantee at least 60
+      }
+      if (critical === 0 && high === 0 && finalScore > 30) {
+        finalScore = 30; // Only medium/low cannot exceed 30
+      }
+      
+      return Math.round(finalScore);
     },
     
     computeSummary(findings) {
@@ -667,6 +711,7 @@ const RiskScanner = (() => {
       // Update modal content
       DOM.setText(DOM.get('detailsDependency'), finding.dependency || '--');
       DOM.setText(DOM.get('detailsId'), finding.id || '--');
+      DOM.setText(DOM.get('detailsRiskScore'), `Risk Score: ${finding.riskScore || 0}`);
       DOM.setText(DOM.get('detailsSeverity'), String(finding.severity || '--').toUpperCase());
       DOM.setText(DOM.get('detailsConfidence'), `Confidence: ${String(finding.confidence || '--').toUpperCase()}`);
       DOM.setText(DOM.get('detailsDirectness'), finding.directness || '--');
@@ -749,10 +794,15 @@ const RiskScanner = (() => {
       return (results || []).map((r, idx) => {
         const dependency = [r.groupId, r.artifactId, r.version].filter(Boolean).join(':');
 
-        const riskLevel = String(r.riskLevel || 'UNKNOWN').toUpperCase();
-        const severity = (riskLevel === 'HIGH' || riskLevel === 'MEDIUM' || riskLevel === 'LOW')
-          ? riskLevel
-          : 'LOW';
+        const vulnerabilityCount = r.enrichment?.vulnerabilityCount || 0;
+
+        // Calculate severity based on vulnerability count (not just backend riskLevel)
+        // Critical: 10+, High: 5-9, Medium: 2-4, Low: 0-1
+        let severity;
+        if (vulnerabilityCount >= 10) severity = 'CRITICAL';
+        else if (vulnerabilityCount >= 5) severity = 'HIGH';
+        else if (vulnerabilityCount >= 2) severity = 'MEDIUM';
+        else severity = 'LOW';
 
         // Get actual vulnerability IDs from enrichment, or fallback to dependency coordinate
         const vulnIds = r.enrichment?.vulnerabilityIds;
@@ -789,7 +839,8 @@ const RiskScanner = (() => {
           explanationText: r.explanation || '--',
           fromCache: r.fromCache,
           analyzedAt: r.analyzedAt,
-          vulnerabilityCount: r.enrichment?.vulnerabilityCount || 0,
+          vulnerabilityCount: vulnerabilityCount,
+          riskScore: r.riskScore || 0,
           buildTool: r.buildTool
         };
       });

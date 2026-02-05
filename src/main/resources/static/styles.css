@@ -855,7 +855,7 @@ body{
 .recommendations-list .muted{color:var(--muted);}
 
 /* Tooltips */
-[data-tooltip]{position:relative; cursor:help;}
+[data-tooltip]{position:relative;}
 [data-tooltip]::before{
   content:attr(data-tooltip);
   position:absolute;
