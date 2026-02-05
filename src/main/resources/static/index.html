@@ -63,6 +63,10 @@
                   <span class="btn__icon">🔍</span>
                   <span>Analyze Dependencies</span>
                 </button>
+                <button type="button" id="loadCachedResults" class="btn btn--ghost">
+                  <span class="btn__icon">📂</span>
+                  <span>Load Cached</span>
+                </button>
                 <button type="button" id="clearBuildFile" class="btn btn--ghost" style="margin-left: 8px;">
                   <span class="btn__icon">🗑️</span>
                   <span>Clear</span>
@@ -185,36 +189,36 @@
 
               <div id="overviewEmpty" class="empty-state" role="status" aria-live="polite">
                 <div class="empty-state__title">No scan yet</div>
-                <div class="empty-state__body">Paste a build file and run <span class="mono">Analyze Dependencies</span> to generate results.</div>
+                <div class="empty-state__body">Enter a project path and run <span class="mono">Analyze Dependencies</span> to generate results.</div>
               </div>
 
               <div id="overviewContent" hidden>
                 <div class="overview-grid" aria-label="Summary cards">
-                  <div class="kpi kpi--neutral" aria-label="Total dependencies">
+                  <div class="kpi kpi--neutral" aria-label="Total dependencies" data-tooltip="Total number of dependencies resolved from the project (direct + transitive)">
                     <div class="kpi__k">Total dependencies</div>
                     <div class="kpi__v mono" id="kpiTotalDependencies">--</div>
                   </div>
-                  <div class="kpi kpi--neutral" aria-label="Vulnerabilities found">
+                  <div class="kpi kpi--neutral" aria-label="Vulnerabilities found" data-tooltip="Dependencies with at least one known vulnerability from OSV database">
                     <div class="kpi__k">Vulnerabilities found</div>
                     <div class="kpi__v mono" id="kpiVulnsFound">--</div>
                   </div>
-                  <div class="kpi kpi--bad" aria-label="Critical">
+                  <div class="kpi kpi--bad" aria-label="Critical" data-tooltip="Dependencies with 10+ CVEs or critical severity vulnerabilities">
                     <div class="kpi__k">Critical</div>
                     <div class="kpi__v mono" id="kpiCritical">--</div>
                   </div>
-                  <div class="kpi kpi--warn" aria-label="High">
+                  <div class="kpi kpi--warn" aria-label="High" data-tooltip="Dependencies with 5-9 high severity vulnerabilities">
                     <div class="kpi__k">High</div>
                     <div class="kpi__v mono" id="kpiHigh">--</div>
                   </div>
-                  <div class="kpi kpi--mid" aria-label="Medium">
+                  <div class="kpi kpi--mid" aria-label="Medium" data-tooltip="Dependencies with 2-4 medium severity vulnerabilities">
                     <div class="kpi__k">Medium</div>
                     <div class="kpi__v mono" id="kpiMedium">--</div>
                   </div>
-                  <div class="kpi kpi--good" aria-label="Low">
+                  <div class="kpi kpi--good" aria-label="Low" data-tooltip="Dependencies with 0-1 low severity vulnerabilities">
                     <div class="kpi__k">Low</div>
                     <div class="kpi__v mono" id="kpiLow">--</div>
                   </div>
-                  <div class="kpi kpi--neutral" aria-label="Overall risk score">
+                  <div class="kpi kpi--neutral" aria-label="Overall risk score" data-tooltip="Weighted risk score: Critical(50) + High(30) + Medium(15) + Low(5). Max 100. Higher = more risk.">
                     <div class="kpi__k">Overall risk score</div>
                     <div class="kpi__v mono" id="kpiOverallRisk">--</div>
                   </div>
@@ -270,6 +274,10 @@
               
               <div class="filters" aria-label="Finding filters">
                 <div class="filters__row">
+                  <div class="filters__group filters__group--search">
+                    <label class="form-label" for="searchDependencies">Search</label>
+                    <input type="text" class="form-input" id="searchDependencies" placeholder="Filter by dependency name..." autocomplete="off">
+                  </div>
                   <div class="filters__group">
                     <label class="form-label" for="filterSeverity">Severity</label>
                     <select class="form-select" id="filterSeverity" name="filterSeverity">
@@ -302,6 +310,9 @@
                 </div>
 
                 <div class="filters__row filters__row--right">
+                  <button type="button" id="exportResults" class="btn btn--ghost" title="Export to CSV">
+                    <span>📥 Export CSV</span>
+                  </button>
                   <span class="meta" id="findingsCount">0 findings</span>
                 </div>
               </div>
@@ -310,17 +321,18 @@
                 <table class="table" aria-describedby="resultsMeta">
                   <thead>
                     <tr>
-                      <th scope="col">Dependency</th>
-                      <th scope="col">Severity</th>
-                      <th scope="col">ID</th>
-                      <th scope="col">Confidence</th>
-                      <th scope="col">Directness</th>
-                      <th scope="col">Details</th>
+                      <th scope="col" data-tooltip="The library/dependency identified (format: groupId:artifactId:version)">Dependency</th>
+                      <th scope="col" data-tooltip="Number of known CVEs/vulnerabilities for this dependency">CVEs</th>
+                      <th scope="col" data-tooltip="Risk severity based on vulnerability count and impact: Critical (10+ CVEs), High (5-9), Medium (2-4), Low (0-1)">Severity</th>
+                      <th scope="col" data-tooltip="Primary CVE or vulnerability identifier from OSV database">ID</th>
+                      <th scope="col" data-tooltip="Confidence in dependency resolution: HIGH for Maven, MEDIUM for Gradle">Confidence</th>
+                      <th scope="col" data-tooltip="Direct = declared in build file, Transitive = pulled in by other dependencies">Directness</th>
+                      <th scope="col" data-tooltip="Data source: OSV = Open Source Vulnerabilities, Maven Central, or Cache">Source</th>
                     </tr>
                   </thead>
                   <tbody id="resultsBody">
                     <tr>
-                      <td class="mono" colspan="6">Run an analysis to populate findings.</td>
+                      <td class="mono" colspan="7">Run an analysis to populate findings.</td>
                     </tr>
                   </tbody>
                 </table>
@@ -329,8 +341,38 @@
 
             <section class="card" aria-labelledby="analysisTitle">
               <h3 id="analysisTitle" class="card__title">Analysis</h3>
-              <div class="placeholder" id="analysisPlaceholder">
-                <p class="muted">Charts / timeline / remediation guidance will render here.</p>
+              <div id="analysisContent">
+                <div class="analysis-section">
+                  <h4 class="analysis-section__title">Severity Distribution</h4>
+                  <div class="severity-bars" id="severityBars">
+                    <div class="severity-bar severity-bar--critical">
+                      <span class="severity-bar__label">Critical</span>
+                      <div class="severity-bar__track"><div class="severity-bar__fill" id="barCritical" style="width:0%"></div></div>
+                      <span class="severity-bar__count" id="countCritical">0</span>
+                    </div>
+                    <div class="severity-bar severity-bar--high">
+                      <span class="severity-bar__label">High</span>
+                      <div class="severity-bar__track"><div class="severity-bar__fill" id="barHigh" style="width:0%"></div></div>
+                      <span class="severity-bar__count" id="countHigh">0</span>
+                    </div>
+                    <div class="severity-bar severity-bar--medium">
+                      <span class="severity-bar__label">Medium</span>
+                      <div class="severity-bar__track"><div class="severity-bar__fill" id="barMedium" style="width:0%"></div></div>
+                      <span class="severity-bar__count" id="countMedium">0</span>
+                    </div>
+                    <div class="severity-bar severity-bar--low">
+                      <span class="severity-bar__label">Low</span>
+                      <div class="severity-bar__track"><div class="severity-bar__fill" id="barLow" style="width:0%"></div></div>
+                      <span class="severity-bar__count" id="countLow">0</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="analysis-section">
+                  <h4 class="analysis-section__title">Top Recommendations</h4>
+                  <ul class="recommendations-list" id="topRecommendations">
+                    <li class="muted">Run an analysis to see recommendations.</li>
+                  </ul>
+                </div>
               </div>
             </section>
           </div>

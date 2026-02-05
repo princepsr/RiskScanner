@@ -35,7 +35,8 @@ const RiskScanner = (() => {
   const API = {
     BASE_URL: '/api',
     ENDPOINTS: {
-      PROJECT_ANALYZE: '/project/analyze'
+      PROJECT_ANALYZE: '/project/analyze',
+      CACHED_RESULTS: '/dashboard/cached-results'
     },
     HEADERS: {
       'Content-Type': 'application/json',
@@ -50,16 +51,43 @@ const RiskScanner = (() => {
 
       try {
         const response = await fetch(url, config);
+        
         if (!response.ok) {
-          const error = new Error(`HTTP error! status: ${response.status}`);
+          const error = new Error(this.getFriendlyErrorMessage(response.status));
+          error.status = response.status;
           error.response = response;
           throw error;
         }
-        return await response.json();
+        
+        const data = await response.json();
+        
+        // Validate response structure
+        if (data === null || data === undefined) {
+          throw new Error('Server returned empty response');
+        }
+        
+        return data;
       } catch (error) {
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+          console.error('Network error - server may be offline:', error);
+          throw new Error('Cannot connect to server. Please ensure the backend is running.');
+        }
         console.error('API Request failed:', error);
         throw error;
       }
+    },
+    
+    getFriendlyErrorMessage(status) {
+      const messages = {
+        400: 'Invalid request. Please check your input and try again.',
+        401: 'Authentication required. Please check your API settings.',
+        403: 'Access denied. You do not have permission to perform this action.',
+        404: 'Endpoint not found. The requested service may be unavailable.',
+        500: 'Server error. Please try again later or contact support.',
+        502: 'Service temporarily unavailable. Please try again later.',
+        503: 'Service overloaded. Please wait a moment and try again.'
+      };
+      return messages[status] || `Server error (${status}). Please try again.`;
     }
   };
 
@@ -67,16 +95,47 @@ const RiskScanner = (() => {
   const State = {
     isScanning: false,
     error: null,
+    allFindings: [], // Store all findings for filtering
+    filteredFindings: [], // Currently displayed findings after filtering
     settings: {
       buildTool: 'maven',
       aiEnabled: false,
       aiProvider: null,
       aiApiKey: null
     },
+    filters: {
+      severity: 'all',
+      directness: 'all',
+      confidence: 'all',
+      search: ''
+    },
     setScanning(scanning) {
       this.isScanning = scanning;
       DOM.toggle(DOM.get('analyzeDependencies'), !scanning);
       DOM.toggle(DOM.get('loadingOverlay'), scanning);
+    },
+    setFindings(findings) {
+      this.allFindings = findings || [];
+      this.applyFilters();
+    },
+    setFilter(type, value) {
+      this.filters[type] = value;
+      this.applyFilters();
+    },
+    applyFilters() {
+      this.filteredFindings = this.allFindings.filter(f => {
+        const severityMatch = this.filters.severity === 'all' || 
+          String(f.severity).toUpperCase() === this.filters.severity;
+        const directnessMatch = this.filters.directness === 'all' || 
+          f.directness === this.filters.directness;
+        const confidenceMatch = this.filters.confidence === 'all' || 
+          String(f.confidence).toUpperCase() === this.filters.confidence;
+        const searchMatch = !this.filters.search || 
+          String(f.dependency).toLowerCase().includes(this.filters.search.toLowerCase());
+        return severityMatch && directnessMatch && confidenceMatch && searchMatch;
+      });
+      // Update UI with filtered results
+      UI.updateResults(this.filteredFindings, this.allFindings.length);
     },
     setError(error) {
       this.error = error;
@@ -133,6 +192,26 @@ const RiskScanner = (() => {
       // Analyze button
       DOM.on(DOM.get('analyzeDependencies'), 'click', () => Scanner.startScan());
       
+      // Load Cached button
+      DOM.on(DOM.get('loadCachedResults'), 'click', () => Scanner.loadCached());
+      
+      // Filter dropdowns
+      DOM.on(DOM.get('filterSeverity'), 'change', (e) => State.setFilter('severity', e.target.value));
+      DOM.on(DOM.get('filterDirectness'), 'change', (e) => State.setFilter('directness', e.target.value));
+      DOM.on(DOM.get('filterConfidence'), 'change', (e) => State.setFilter('confidence', e.target.value));
+      
+      // Search input
+      const searchInput = DOM.get('searchDependencies');
+      if (searchInput) {
+        DOM.on(searchInput, 'input', (e) => State.setFilter('search', e.target.value));
+      }
+      
+      // Export button
+      DOM.on(DOM.get('exportResults'), 'click', () => this.exportToCSV());
+      
+      // Keyboard shortcuts
+      DOM.on(document, 'keydown', (e) => this.handleKeyboard(e));
+      
       // Build file content changes
       const ta = DOM.get('buildFileContent');
       if (ta) {
@@ -169,7 +248,10 @@ const RiskScanner = (() => {
         `CONFIDENCE: ${buildTool === 'gradle' ? 'MEDIUM' : 'HIGH'}`);
       
       // Update AI settings
-      DOM.toggle(DOM.get('aiSettings'), aiEnabled);
+      const aiFieldset = DOM.get('aiFieldset');
+      if (aiFieldset) {
+        aiFieldset.disabled = !aiEnabled;
+      }
       
       // Update build file placeholder
       this.updateBuildFilePlaceholder();
@@ -250,8 +332,9 @@ const RiskScanner = (() => {
       }
     },
     
-    updateResults(findings = []) {
+    updateResults(findings = [], totalCount = null) {
       const hasFindings = Array.isArray(findings) && findings.length > 0;
+      const actualTotal = totalCount !== null ? totalCount : (hasFindings ? findings.length : 0);
       
       // Update summary
       const summary = this.computeSummary(findings);
@@ -264,10 +347,53 @@ const RiskScanner = (() => {
       DOM.toggle(DOM.get('overviewEmpty'), !hasFindings);
       DOM.toggle(DOM.get('overviewContent'), hasFindings);
       
-      // Findings count
+      // Findings count - show filtered vs total when filtering
       const countEl = DOM.get('findingsCount');
       if (countEl) {
-        countEl.textContent = `${hasFindings ? findings.length : 0} findings`;
+        if (totalCount !== null && totalCount !== findings.length) {
+          countEl.textContent = `Showing ${findings.length} of ${totalCount} findings`;
+        } else {
+          countEl.textContent = `${hasFindings ? findings.length : 0} findings`;
+        }
+      }
+
+      // Update Analysis section
+      this.updateAnalysisSection(findings, summary);
+
+      // Update metadata
+      this.updateMetadata(findings);
+    },
+
+    updateMetadata(findings) {
+      // Build tool
+      const buildToolEl = DOM.get('metaBuildTool');
+      if (buildToolEl) {
+        const buildTool = findings[0]?.source?.split(' ')[0] || '--';
+        buildToolEl.textContent = buildTool;
+      }
+
+      // Timestamp - use the most recent analyzedAt
+      const timestampEl = DOM.get('metaTimestamp');
+      if (timestampEl) {
+        const timestamps = findings
+          .map(f => f.analyzedAt)
+          .filter(Boolean)
+          .sort()
+          .reverse();
+        
+        if (timestamps.length > 0) {
+          const date = new Date(timestamps[0]);
+          timestampEl.textContent = date.toLocaleString();
+        } else {
+          timestampEl.textContent = new Date().toLocaleString();
+        }
+      }
+
+      // Sources - unique list
+      const sourcesEl = DOM.get('metaSources');
+      if (sourcesEl) {
+        const uniqueSources = [...new Set(findings.map(f => f.source).filter(Boolean))];
+        sourcesEl.textContent = uniqueSources.length > 0 ? uniqueSources.join(', ') : 'OSV, Maven Central';
       }
     },
     
@@ -282,6 +408,113 @@ const RiskScanner = (() => {
 
       const countEl = DOM.get('findingsCount');
       if (countEl) countEl.textContent = '0 findings';
+
+      // Reset Analysis section
+      this.updateAnalysisSection([], { critical: 0, high: 0, medium: 0, low: 0 });
+
+      // Reset State
+      State.allFindings = [];
+      State.filteredFindings = [];
+    },
+
+    exportToCSV() {
+      const findings = State.filteredFindings;
+      if (!findings || findings.length === 0) {
+        UI.showError('No results to export. Run an analysis first.');
+        return;
+      }
+
+      const headers = ['Dependency', 'CVEs', 'Severity', 'ID', 'Confidence', 'Directness', 'Source', 'Description'];
+      const rows = findings.map(f => [
+        f.dependency,
+        f.vulnerabilityCount || 0,
+        f.severity,
+        f.id,
+        f.confidence,
+        f.directness,
+        f.source,
+        f.description
+      ]);
+
+      const csv = [headers.join(','), ...rows.map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))].join('\n');
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `risk-scan-${new Date().toISOString().slice(0,10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    },
+
+    handleKeyboard(e) {
+      // Ctrl+Enter or Cmd+Enter to analyze
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        const btn = DOM.get('analyzeDependencies');
+        if (btn && !btn.disabled) {
+          Scanner.startScan();
+        }
+      }
+      // Escape to close modal
+      if (e.key === 'Escape') {
+        const modal = DOM.get('detailsModal');
+        if (modal && !modal.hidden) {
+          DOM.hide(modal);
+        }
+      }
+    },
+
+    updateAnalysisSection(findings, summary) {
+      const total = findings.length || 1; // avoid divide by zero
+
+      // Update severity bars
+      const setBar = (severity, count) => {
+        const pct = Math.round((count / total) * 100);
+        const fill = DOM.get(`bar${severity}`);
+        const countEl = DOM.get(`count${severity}`);
+        if (fill) fill.style.width = `${pct}%`;
+        if (countEl) countEl.textContent = count;
+      };
+      setBar('Critical', summary.critical || 0);
+      setBar('High', summary.high || 0);
+      setBar('Medium', summary.medium || 0);
+      setBar('Low', summary.low || 0);
+
+      // Update top recommendations
+      const recList = DOM.get('topRecommendations');
+      if (!recList) return;
+
+      if (!findings || findings.length === 0) {
+        recList.innerHTML = '<li class="muted">Run an analysis to see recommendations.</li>';
+        return;
+      }
+
+      // Collect unique recommendations from findings with HIGH/CRITICAL severity
+      const highRiskFindings = findings.filter(f => 
+        ['HIGH', 'CRITICAL'].includes(String(f.severity).toUpperCase())
+      );
+
+      if (highRiskFindings.length === 0) {
+        recList.innerHTML = '<li class="muted">No high-risk dependencies found. Continue routine monitoring.</li>';
+        return;
+      }
+
+      // Get recommendations from high risk findings
+      const allRecs = [];
+      highRiskFindings.slice(0, 5).forEach(f => {
+        if (f.description && f.description !== '--') {
+          allRecs.push(`<strong>${f.dependency}</strong>: ${f.description}`);
+        }
+      });
+
+      if (allRecs.length === 0) {
+        recList.innerHTML = '<li>No specific recommendations available for current findings.</li>';
+      } else {
+        recList.innerHTML = allRecs.map(r => `<li>${r}</li>`).join('');
+      }
     },
     
     updateSummary(summary) {
@@ -295,7 +528,9 @@ const RiskScanner = (() => {
       DOM.setText(DOM.get('kpiLow'), low);
       DOM.setText(DOM.get('kpiTotalDependencies'), total);
       DOM.setText(DOM.get('kpiVulnsFound'), total);
-      DOM.setText(DOM.get('kpiOverallRisk'), total === 0 ? 0 : Math.round((high * 3 + medium * 2 + low) / total));
+      // Weighted risk score: critical=50, high=30, medium=15, low=5, capped at 100
+      const weightedScore = Math.min(100, critical * 50 + high * 30 + medium * 15 + low * 5);
+      DOM.setText(DOM.get('kpiOverallRisk'), weightedScore);
       
       // Update overall status
       const statusEl = DOM.get('appStatus');
@@ -354,6 +589,7 @@ const RiskScanner = (() => {
       // Create cells
       const cells = [
         this.createCell(finding.dependency || '--', 'dependency'),
+        this.createCell(finding.vulnerabilityCount || 0, 'vuln-count mono'),
         this.createSeverityCell(finding.severity),
         this.createCell(finding.id || '--', 'id'),
         this.createConfidenceCell(finding.confidence),
@@ -470,10 +706,39 @@ const RiskScanner = (() => {
         });
 
         const findings = this.mapProjectResultsToFindings(response?.results || []);
-        UI.updateResults(findings);
+        State.setFindings(findings);
         
       } catch (error) {
         State.setError(error);
+      } finally {
+        State.setScanning(false);
+        UI.showLoading(false);
+      }
+    },
+
+    async loadCached() {
+      if (State.isScanning) return;
+      
+      try {
+        State.setScanning(true);
+        UI.showLoading(true, 'Loading cached results...');
+        UI.clearResults();
+
+        const response = await API.request(API.ENDPOINTS.CACHED_RESULTS, {
+          method: 'GET'
+        });
+
+        if (!response || response.length === 0) {
+          UI.showError('No cached results found. Run a new analysis first.');
+          return;
+        }
+
+        const findings = this.mapProjectResultsToFindings(response);
+        State.setFindings(findings);
+        
+      } catch (error) {
+        console.error('Failed to load cached results:', error);
+        UI.showError('Failed to load cached results. Please try again.');
       } finally {
         State.setScanning(false);
         UI.showLoading(false);
@@ -489,21 +754,43 @@ const RiskScanner = (() => {
           ? riskLevel
           : 'LOW';
 
+        // Get actual vulnerability IDs from enrichment, or fallback to dependency coordinate
+        const vulnIds = r.enrichment?.vulnerabilityIds;
+        const id = Array.isArray(vulnIds) && vulnIds.length > 0
+          ? vulnIds[0]
+          : `${r.groupId}:${r.artifactId}`;
+
+        // Determine actual data source from enrichment
+        const source = r.enrichment?.ecosystem
+          ? `${r.enrichment.ecosystem}${r.fromCache ? ' (cached)' : ''}`
+          : (r.fromCache ? 'Cache' : 'Analysis');
+
+        // Confidence: HIGH for Maven (reliable), MEDIUM for Gradle (less reliable), or from build tool setting
+        const confidence = r.buildTool === 'gradle' ? 'MEDIUM' : 'HIGH';
+
+        // Directness: should come from actual dependency resolution (fallback to direct for now)
+        // In real implementation, backend should send isDirect or isTransitive flag
+        const directness = r.buildTool === 'gradle' ? 'transitive' : 'direct';
+
         return {
           _id: `dep-${idx}`,
           dependency: dependency || '--',
           severity,
-          id: r.riskScore != null ? String(r.riskScore) : '--',
-          confidence: 'HIGH',
-          directness: 'direct',
-          source: r.provider ? `${r.provider}${r.model ? `/${r.model}` : ''}` : '--',
+          id,
+          confidence,
+          directness,
+          source,
           description: r.explanation || '--',
           affectedVersions: Array.isArray(r.recommendations) && r.recommendations.length
             ? r.recommendations.join('\n')
             : '--',
           dependencyPath: '--',
           explanationType: 'static',
-          explanationText: r.explanation || '--'
+          explanationText: r.explanation || '--',
+          fromCache: r.fromCache,
+          analyzedAt: r.analyzedAt,
+          vulnerabilityCount: r.enrichment?.vulnerabilityCount || 0,
+          buildTool: r.buildTool
         };
       });
     }
