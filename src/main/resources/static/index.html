@@ -483,6 +483,23 @@
           </div>
           <p class="details-section__text" id="detailsExplanation">--</p>
         </section>
+
+        <section class="details-section details-section--actions" aria-labelledby="suppressTitle">
+          <h4 class="details-section__title" id="suppressTitle">Actions</h4>
+          <div class="suppress-actions" id="suppressActions">
+            <div class="suppress-input-group" id="suppressInputGroup" hidden>
+              <label class="form-label" for="suppressReason">Reason for suppression</label>
+              <input type="text" class="form-input" id="suppressReason" placeholder="e.g., False positive, internal dependency, accepted risk...">
+              <div class="suppress-buttons">
+                <button type="button" id="confirmSuppress" class="btn btn--warning">Confirm Suppress</button>
+                <button type="button" id="cancelSuppress" class="btn btn--ghost">Cancel</button>
+              </div>
+            </div>
+            <button type="button" id="suppressFinding" class="btn btn--ghost btn--warning" title="Suppress this vulnerability">
+              <span>🚫 Suppress Finding</span>
+            </button>
+          </div>
+        </section>
       </div>
     </div>
   </div>

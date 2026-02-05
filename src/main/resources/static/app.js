@@ -328,6 +328,9 @@ const RiskScanner = (() => {
           DOM.hide(DOM.get('detailsModal'));
         }
       });
+      
+      // Suppress finding handlers
+      this.initSuppressHandlers();
     },
     
     updateUI() {
@@ -847,7 +850,84 @@ const RiskScanner = (() => {
       
       // Show the modal
       DOM.show(modal);
-    }
+      
+      // Store current finding for suppress action
+      State.currentFinding = finding;
+      
+      // Reset suppress UI
+      const suppressBtn = DOM.get('suppressFinding');
+      const suppressInputGroup = DOM.get('suppressInputGroup');
+      const suppressReason = DOM.get('suppressReason');
+      
+      if (suppressBtn) suppressBtn.hidden = false;
+      if (suppressInputGroup) suppressInputGroup.hidden = true;
+      if (suppressReason) suppressReason.value = '';
+    },
+
+    initSuppressHandlers() {
+      const suppressBtn = DOM.get('suppressFinding');
+      const confirmBtn = DOM.get('confirmSuppress');
+      const cancelBtn = DOM.get('cancelSuppress');
+      const suppressInputGroup = DOM.get('suppressInputGroup');
+      const suppressReason = DOM.get('suppressReason');
+      
+      if (!suppressBtn) return;
+      
+      // Show reason input when suppress clicked
+      DOM.on(suppressBtn, 'click', () => {
+        suppressBtn.hidden = true;
+        suppressInputGroup.hidden = false;
+        suppressReason?.focus();
+      });
+      
+      // Cancel suppress action
+      DOM.on(cancelBtn, 'click', () => {
+        suppressBtn.hidden = false;
+        suppressInputGroup.hidden = true;
+        if (suppressReason) suppressReason.value = '';
+      });
+      
+      // Confirm suppress
+      DOM.on(confirmBtn, 'click', async () => {
+        const reason = suppressReason?.value.trim();
+        if (!reason) {
+          UI.showError('Please provide a reason for suppression');
+          return;
+        }
+        
+        const finding = State.currentFinding;
+        if (!finding) {
+          UI.showError('No finding selected');
+          return;
+        }
+        
+        try {
+          await API.request(API.ENDPOINTS.VULN_SUPPRESS, {
+            method: 'POST',
+            body: JSON.stringify({
+              findingId: finding.id,
+              dependency: finding.dependency,
+              reason,
+              suppressedBy: 'user',
+              justification: reason
+            })
+          });
+          
+          // Hide modal and refresh
+          DOM.hide(DOM.get('detailsModal'));
+          UI.showError('Finding suppressed successfully');
+          
+          // Refresh the results to hide suppressed finding
+          const projectPath = DOM.get('buildFileContent')?.value.trim();
+          if (projectPath) {
+            // Reload to get updated results without suppressed items
+            await Scanner.startScan();
+          }
+        } catch (error) {
+          UI.showError(`Failed to suppress: ${error.message}`);
+        }
+      });
+    },
   };
   
   // Scan Service

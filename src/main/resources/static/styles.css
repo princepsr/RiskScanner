@@ -216,6 +216,15 @@ body{
 /* Single Dep Analysis */
 #singleDepTitle{margin-bottom:6px;}
 
+/* Suppress actions in detail modal */
+.details-section--actions{border-top:1px solid var(--border); padding-top:12px; margin-top:12px;}
+.suppress-actions{display:flex; flex-direction:column; gap:10px;}
+.suppress-input-group{display:flex; flex-direction:column; gap:8px;}
+.suppress-input-group[hidden]{display:none;}
+.suppress-buttons{display:flex; gap:10px; margin-top:8px;}
+.btn--warning{color:rgba(245,158,11,.95); border-color:rgba(245,158,11,.45); background:rgba(245,158,11,.08);}
+.btn--warning:hover{border-color:rgba(245,158,11,.65); background:rgba(245,158,11,.12);}
+
 .context-note{
   margin:10px 0 0;
   padding:10px;
