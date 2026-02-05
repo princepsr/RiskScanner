@@ -155,11 +155,27 @@ public class MavenDependencyResolver implements DependencyResolver {
     }
 
     private Model parseMavenModel(Path pomFile) throws IOException, XmlPullParserException {
-        MavenXpp3Reader reader = new MavenXpp3Reader();
-        try (FileReader fileReader = new FileReader(pomFile.toFile())) {
-            Model model = reader.read(fileReader);
-
-            return model;
+        try {
+            // Use ModelBuilder to create effective model with parent POM inheritance
+            var modelBuilder = new DefaultModelBuilderFactory().newInstance();
+            
+            ModelBuildingRequest request = new DefaultModelBuildingRequest();
+            request.setPomFile(pomFile.toFile());
+            request.setProcessPlugins(false); // We don't need plugin resolution
+            request.setValidationLevel(ModelBuildingRequest.VALIDATION_LEVEL_MINIMAL);
+            
+            // Add remote repositories for resolving parent POMs
+            request.setModelResolver(new SimpleModelResolver());
+            
+            var result = modelBuilder.build(request);
+            return result.getEffectiveModel();
+            
+        } catch (ModelBuildingException e) {
+            // Fallback to raw parsing if effective model building fails
+            MavenXpp3Reader reader = new MavenXpp3Reader();
+            try (FileReader fileReader = new FileReader(pomFile.toFile())) {
+                return reader.read(fileReader);
+            }
         }
     }
 
