@@ -20,7 +20,7 @@ Thanks for taking the time to contribute.
 ```
 
 Open:
-- `http://localhost:8080/`
+- `http://localhost:8080/buildaegis`
 
 ### Test
 

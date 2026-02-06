@@ -2,7 +2,7 @@
 
 This document describes the backend REST APIs consumed by the UI.
 
-Base URL (local dev): `http://localhost:8080`
+Base URL (local dev): `http://localhost:8080/buildaegis`
 
 ## Conventions
 

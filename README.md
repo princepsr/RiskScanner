@@ -96,7 +96,7 @@ Key docs:
 ```
 
 2. Open the UI:
-- `http://localhost:8080/`
+- `http://localhost:8080/buildaegis`
 
 3. (Optional) Configure AI:
 
@@ -140,7 +140,7 @@ Main configuration file:
 
 Key settings:
 - **H2 database**: persisted to `./data/buildaegis`
-- **H2 console**: `http://localhost:8080/h2-console`
+- **H2 console**: `http://localhost:8080/buildaegis/h2-console`
 - **Encryption secret**: `buildaegis.encryption.secret`
   - Set this for stable encryption across restarts
   - If you change it later, previously stored encrypted API keys cannot be decrypted

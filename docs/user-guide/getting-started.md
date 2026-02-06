@@ -21,11 +21,11 @@ Before you begin, ensure you have:
 ./mvnw spring-boot:run
 ```
 
-The application will start on `http://localhost:8080`
+The application will start on `http://localhost:8080/buildaegis`
 
 ### 2. Open the Web Interface
 
-Navigate to `http://localhost:8080` in your browser.
+Navigate to `http://localhost:8080/buildaegis` in your browser.
 
 ### 3. Run Your First Analysis
 

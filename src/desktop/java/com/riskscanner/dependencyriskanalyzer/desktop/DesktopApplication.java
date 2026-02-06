@@ -13,7 +13,7 @@ import org.springframework.context.ConfigurableApplicationContext;
  * JavaFX desktop wrapper for the BuildAegis application.
  *
  * <p>This class starts the Spring Boot backend in-process and loads the standard web UI
- * ({@code http://localhost:8080/}) in a JavaFX {@link WebView}.
+ * ({@code http://localhost:8080/buildaegis}) in a JavaFX {@link WebView}.
  *
  * <p>Build/run:
  * <ul>
@@ -38,7 +38,7 @@ public class DesktopApplication extends Application {
     @Override
     public void start(Stage stage) {
         WebView webView = new WebView();
-        webView.getEngine().load("http://localhost:8080/");
+        webView.getEngine().load("http://localhost:8080/buildaegis");
 
         Scene scene = new Scene(webView, 1200, 800);
         stage.setTitle("BuildAegis");

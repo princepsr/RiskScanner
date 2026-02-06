@@ -362,7 +362,7 @@ spring.datasource.password=
 spring.h2.console.enabled=true
 ```
 
-Access console at: `http://localhost:8080/h2-console`
+Access console at: `http://localhost:8080/buildaegis/h2-console`
 
 ### Cache Configuration
 

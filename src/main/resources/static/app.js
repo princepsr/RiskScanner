@@ -33,7 +33,7 @@ const BuildAegis = (() => {
 
   // API Configuration
   const API = {
-    BASE_URL: '/api',
+    BASE_URL: '/buildaegis/api',
     ENDPOINTS: {
       PROJECT_ANALYZE: '/project/analyze',
       CACHED_RESULTS: '/dashboard/cached-results',
@@ -273,10 +273,12 @@ const BuildAegis = (() => {
       if (aiApiKey) DOM.on(aiApiKey, 'input', () => this.onAIFieldChange());
       
       // Analyze button
-      DOM.on(DOM.get('analyzeDependencies'), 'click', () => Scanner.startScan());
+      const analyzeBtn = DOM.get('analyzeDependencies');
+      DOM.on(analyzeBtn, 'click', () => Scanner.startScan());
       
       // Load Cached button
-      DOM.on(DOM.get('loadCachedResults'), 'click', () => Scanner.loadCached());
+      const loadCachedBtn = DOM.get('loadCachedResults');
+      DOM.on(loadCachedBtn, 'click', () => Scanner.loadCached());
       
       // Filter dropdowns
       DOM.on(DOM.get('filterSeverity'), 'change', (e) => State.setFilter('severity', e.target.value));

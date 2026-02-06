@@ -98,6 +98,7 @@ body{
   border-radius:var(--radius);
   box-shadow:var(--shadow);
   overflow:hidden;
+  min-width:0;
 }
 .panel__header{
   padding:14px 14px 12px;
@@ -324,6 +325,7 @@ body{
 .badge--confidence:hover::after,.badge--confidence:focus::after{
   opacity:1;
   transform:translateY(0);
+  z-index: 100;
 }
 
 .empty-state{
@@ -348,7 +350,6 @@ body{
   padding:10px;
   background:rgba(15,23,34,.45);
   position:relative;
-  overflow:hidden;
 }
 .kpi::before{
   content:"";
@@ -817,7 +818,7 @@ body{
 }
 .table{width:100%; border-collapse:collapse; min-width:680px; background:rgba(15,23,34,.35)}
 .table th,.table td{padding:10px 10px; border-bottom:1px solid var(--border); vertical-align:top; font-size:13px;}
-.table th{position:sticky; top:0; background:rgba(15,23,34,.9); text-align:left; font-size:12px; color:var(--muted);}
+.table th{position:sticky; top:0; background:rgba(15,23,34,.9); text-align:left; font-size:12px; color:var(--muted); white-space:nowrap;}
 
 .mono{font-family:var(--mono)}
 .muted{color:var(--muted); font-size:12px; margin:8px 0 0}
@@ -913,7 +914,7 @@ body{
   content:attr(data-tooltip);
   position:absolute;
   bottom:100%;
-  left:50%;
+  left:60%;
   transform:translateX(-50%);
   padding:8px 12px;
   background:rgba(15,23,34,.95);
@@ -925,30 +926,22 @@ body{
   white-space:normal;
   max-width:280px;
   width:max-content;
-  z-index:100;
+  z-index:9999;
   opacity:0;
   visibility:hidden;
   transition:opacity .2s ease, visibility .2s ease;
   box-shadow:var(--shadow);
   pointer-events:none;
 }
-[data-tooltip]::after{
-  content:'';
-  position:absolute;
-  bottom:100%;
-  left:50%;
-  transform:translateX(-50%);
-  border:6px solid transparent;
-  border-top-color:rgba(15,23,34,.95);
-  opacity:0;
-  visibility:hidden;
-  transition:opacity .2s ease, visibility .2s ease;
-  pointer-events:none;
-}
-[data-tooltip]:hover::before,
-[data-tooltip]:hover::after{
+[data-tooltip]:hover::before{
   opacity:1;
   visibility:visible;
+}
+
+/* Disable generic tooltip on elements with custom tooltips */
+.tooltip[data-tooltip]::before,
+.badge--confidence[data-tooltip]::before{
+  display:none;
 }
 
 /* Table header tooltips - show below */
@@ -957,27 +950,12 @@ body{
   top:100%;
   margin-top:8px;
 }
-.table th[data-tooltip]::after{
-  bottom:auto;
-  top:100%;
-  border-top-color:transparent;
-  border-bottom-color:rgba(15,23,34,.95);
-  margin-top:2px;
-}
 
 /* KPI card tooltips */
-.kpi[data-tooltip]{overflow:visible;}
 .kpi[data-tooltip]::before{
   bottom:auto;
   top:100%;
   margin-top:8px;
-}
-.kpi[data-tooltip]::after{
-  bottom:auto;
-  top:100%;
-  border-top-color:transparent;
-  border-bottom-color:rgba(15,23,34,.95);
-  margin-top:2px;
 }
 
 /* Search input styling */
@@ -1002,3 +980,19 @@ body{
 /* Export button spacing */
 #exportCSV, #exportJSON, #exportPDF{margin-right:8px;}
 #manageSuppressions{margin-right:12px;}
+
+/* Dependency column tooltip - show on right to avoid left panel clipping */
+.table td[data-tooltip]:first-child::before,
+.table td.dependency[data-tooltip]::before{
+  left:auto;
+  right:0;
+  transform:none;
+  bottom:auto;
+  top:50%;
+  transform:translateY(-50%);
+  margin-left:8px;
+  margin-bottom:0;
+}
+
+/* View button - keep text on one line */
+.btn--link{white-space:nowrap;}

@@ -38,7 +38,7 @@ ls /path/to/project/build.gradle.kts
 
 **Solutions**:
 1. Check browser console for JavaScript errors
-2. Verify backend is running: `curl http://localhost:8080/api/health`
+2. Verify backend is running: `curl http://localhost:8080/buildaegis/api/health`
 3. Check backend logs in `logs/application.log`
 4. Try with a simpler project to isolate the issue
 
@@ -139,7 +139,7 @@ curl https://api.openai.com/v1/models \
 1. Click "Analyze Dependencies" instead of "Load Cached"
 2. Clear cache via database:
    ```sql
-   -- In H2 console (http://localhost:8080/h2-console)
+   -- In H2 console (http://localhost:8080/buildaegis/h2-console)
    DELETE FROM dependency_risk_cache;
    ```
 3. Or delete database files and restart:
@@ -196,16 +196,16 @@ curl https://api.openai.com/v1/models \
 **Solutions**:
 1. Verify backend is running:
    ```bash
-   curl http://localhost:8080
+   curl http://localhost:8080/buildaegis
    ```
 2. Check static files exist:
    ```bash
    ls src/main/resources/static/index.html
    ```
 3. Try accessing directly:
-   - `http://localhost:8080/index.html`
-   - `http://localhost:8080/app.js`
-   - `http://localhost:8080/styles.css`
+   - `http://localhost:8080/buildaegis/index.html`
+   - `http://localhost:8080/buildaegis/app.js`
+   - `http://localhost:8080/buildaegis/styles.css`
 4. Check for port conflicts (try different port)
 
 #### Modal won't open
@@ -306,7 +306,7 @@ curl https://api.openai.com/v1/models \
 ### Database Issues
 
 #### "H2 console not accessible"
-**Symptoms**: Can't access `http://localhost:8080/h2-console`
+**Symptoms**: Can't access `http://localhost:8080/buildaegis/h2-console`
 
 **Solutions**:
 1. Verify property in `application.properties`:
@@ -432,13 +432,13 @@ java -version  # Should show Java 21
 ./mvnw -version
 
 # 3. Test backend running
-curl http://localhost:8080/actuator/health
+curl http://localhost:8080/buildaegis/actuator/health
 
 # 4. Check database
-curl http://localhost:8080/h2-console  # Should return HTML
+curl http://localhost:8080/buildaegis/h2-console  # Should return HTML
 
 # 5. Test API
-curl "http://localhost:8080/api/project/scan?projectPath=/valid/path"
+curl "http://localhost:8080/buildaegis/api/project/scan?projectPath=/valid/path"
 ```
 
 ## Known Limitations
