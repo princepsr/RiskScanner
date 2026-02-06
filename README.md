@@ -40,17 +40,17 @@ Confidence levels indicate how reliable the vulnerability detection is:
 
 Start here:
 
-- `docs/README.md`
+- [docs/README.md](docs/README.md)
 
 Key docs:
 
-- `docs/user-guide/getting-started.md`
-- `docs/user-guide/features.md`
-- `docs/user-guide/ui-guide.md`
-- `docs/architecture/risk-scoring.md`
-- `docs/developer/backend/architecture.md`
-- `docs/developer/frontend/architecture.md`
-- `docs/api/endpoints.md`
+- [docs/user-guide/getting-started.md](docs/user-guide/getting-started.md)
+- [docs/user-guide/features.md](docs/user-guide/features.md)
+- [docs/user-guide/ui-guide.md](docs/user-guide/ui-guide.md)
+- [docs/architecture/risk-scoring.md](docs/architecture/risk-scoring.md)
+- [docs/developer/backend/architecture.md](docs/developer/backend/architecture.md)
+- [docs/developer/frontend/architecture.md](docs/developer/frontend/architecture.md)
+- [docs/api/endpoints.md](docs/api/endpoints.md)
 
 ## Key Features
 
@@ -85,7 +85,7 @@ Key docs:
 
 ## Documentation
 
-- **Docs index**: `docs/README.md`
+- **Docs index**: [docs/README.md](docs/README.md)
 
 ## Quick Start (Web)
 
@@ -148,7 +148,7 @@ Key settings:
 
 ## API Endpoints
 
-Authoritative API documentation is in `docs/api/endpoints.md`.
+Authoritative API documentation is in [docs/api/endpoints.md](docs/api/endpoints.md).
 
 ### AI Settings
 - `GET /api/ai/settings` – Get current AI provider/model configuration
@@ -181,11 +181,11 @@ Authoritative API documentation is in `docs/api/endpoints.md`.
 
 ## How Confidence Level Works
 
-See `docs/user-guide/features.md`.
+See [docs/user-guide/features.md](docs/user-guide/features.md).
 
 ## How Scoring Works
 
-See `docs/architecture/risk-scoring.md`.
+See [docs/architecture/risk-scoring.md](docs/architecture/risk-scoring.md).
 
 ## Architecture Tradeoffs
 
@@ -230,9 +230,13 @@ See `docs/architecture/risk-scoring.md`.
 
 ## Contributing
 
-See `docs/CONTRIBUTING.md` for guidelines on:
+See [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) for guidelines on:
 - Adding new dependency resolvers
 - Adding vulnerability sources
 - Extending AI providers
 - Testing strategies
 - Code style and conventions
+
+Additional project policies:
+- [docs/CODE_OF_CONDUCT.md](docs/CODE_OF_CONDUCT.md)
+- [docs/SECURITY.md](docs/SECURITY.md)

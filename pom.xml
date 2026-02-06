@@ -14,7 +14,7 @@
 	<version>0.0.1-SNAPSHOT</version>
 	<name>BuildAegis</name>
 	<description>A tool for analyzing dependency risks in Java projects</description>
-	<url />
+	<url>https://github.com/princepsr/BuildAegis</url>
 	<licenses>
 		<license>
 			<name>MIT License</name>
@@ -24,15 +24,15 @@
 	</licenses>
 	<developers>
 		<developer>
-			<id>your-id</id>
-			<name>Your Name</name>
-			<email>your.email@example.com</email>
+			<id>princepsr</id>
+			<name>Prince Singh</name>
+			<email>princepsr@users.noreply.github.com</email>
 		</developer>
 	</developers>
 	<scm>
-		<connection>scm:git:git://github.com/your/repository.git</connection>
-		<developerConnection>scm:git:ssh://github.com/your/repository.git</developerConnection>
-		<url>https://github.com/your/repository</url>
+		<connection>scm:git:https://github.com/princepsr/BuildAegis.git</connection>
+		<developerConnection>scm:git:git@github.com:princepsr/BuildAegis.git</developerConnection>
+		<url>https://github.com/princepsr/BuildAegis</url>
 	</scm>
 	<properties>
 		<java.version>21</java.version>

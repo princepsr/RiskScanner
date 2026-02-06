@@ -42,6 +42,11 @@ docs/
 - **[API Reference](api/endpoints.md)** - Complete API documentation
 - **[Risk Scoring Algorithm](architecture/risk-scoring.md)** - How risk scores are calculated
 
+### Project Policies
+- **[Contributing](CONTRIBUTING.md)** - How to contribute changes
+- **[Code of Conduct](CODE_OF_CONDUCT.md)** - Community standards
+- **[Security Policy](SECURITY.md)** - Responsible disclosure
+
 ## Key Information
 
 ### Current Risk Scoring Algorithm
