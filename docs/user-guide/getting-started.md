@@ -1,4 +1,4 @@
-# Getting Started with Risk Scanner
+# Getting Started with BuildAegis
 
 ## Prerequisites
 

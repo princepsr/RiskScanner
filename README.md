@@ -1,6 +1,6 @@
-# Risk Scanner
+# BuildAegis
 
-Risk Scanner is a Spring Boot application that analyzes Java projects (Maven/Gradle) for dependency vulnerabilities and presents results in a lightweight web UI.
+BuildAegis is a Spring Boot application that analyzes Java projects (Maven/Gradle) for dependency vulnerabilities and presents results in a lightweight web UI.
 
 ## What It Does
 
@@ -103,7 +103,7 @@ Key docs:
 - Toggle on **Enable AI-assisted analysis**
 - Select a provider and enter your API key
 
-If `riskscanner.encryption.secret` is configured, API keys are stored encrypted at rest.
+If `buildaegis.encryption.secret` is configured, API keys are stored encrypted at rest.
 
 ## Quick Start (Desktop)
 
@@ -139,12 +139,12 @@ Main configuration file:
 - `src/main/resources/application.properties`
 
 Key settings:
-- **H2 database**: persisted to `./data/risk-scanner`
+- **H2 database**: persisted to `./data/buildaegis`
 - **H2 console**: `http://localhost:8080/h2-console`
-- **Encryption secret**: `riskscanner.encryption.secret`
+- **Encryption secret**: `buildaegis.encryption.secret`
   - Set this for stable encryption across restarts
   - If you change it later, previously stored encrypted API keys cannot be decrypted
-- **Vulnerability cache**: `~/.riskscanner/vulnerability-cache`
+- **Vulnerability cache**: `~/.buildaegis/vulnerability-cache`
 
 ## API Endpoints
 

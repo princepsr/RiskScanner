@@ -1,5 +1,5 @@
 // Main application module
-const RiskScanner = (() => {
+const BuildAegis = (() => {
   // DOM Utilities
   const DOM = {
     get: (id) => document.getElementById(id),
@@ -1361,12 +1361,12 @@ const RiskScanner = (() => {
       UI.updateAnalyzeButton();
       
       // Show welcome message
-      console.log('Risk Scanner initialized');
+      console.log('BuildAegis initialized');
     }
   };
 })();
 
 // Start the application when the DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-  RiskScanner.init();
+  BuildAegis.init();
 });

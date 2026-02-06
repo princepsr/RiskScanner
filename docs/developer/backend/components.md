@@ -4,7 +4,7 @@ This document explains each major backend component and what it owns.
 
 ## Entry Point
 
-### `RiskScannerApplication`
+### `BuildAegisApplication`
 **Responsibility:**
 - Bootstraps Spring Boot.
 - Initializes component scanning and configuration.
@@ -104,7 +104,7 @@ Owns:
 **Responsibility:** encrypt/decrypt secrets (API keys).
 
 Behavior:
-- Encryption is enabled only when `riskscanner.encryption.secret` is present.
+- Encryption is enabled only when `buildaegis.encryption.secret` is present.
 
 ### Vulnerability pipeline services (under `service/vulnerability/*`)
 

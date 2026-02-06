@@ -3,7 +3,7 @@
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
     
     <property name="LOGS_PATH" value="./logs"/>
-    <property name="LOG_FILE" value="${LOGS_PATH}/risk-scanner"/>
+    <property name="LOG_FILE" value="${LOGS_PATH}/buildaegis"/>
     
     <!-- Console Appender with Structured Logging -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">

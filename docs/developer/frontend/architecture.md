@@ -2,7 +2,7 @@
 
 ## Overview
 
-Risk Scanner’s frontend is intentionally simple: a **single-page application** built with **vanilla HTML/CSS/JavaScript** served by Spring Boot from `src/main/resources/static/`.
+BuildAegis’s frontend is intentionally simple: a **single-page application** built with **vanilla HTML/CSS/JavaScript** served by Spring Boot from `src/main/resources/static/`.
 
 There is **no build step**, **no bundler**, and **no framework**. The entire UI behavior is implemented in a single JavaScript file (`app.js`) with a small set of internal modules/objects.
 

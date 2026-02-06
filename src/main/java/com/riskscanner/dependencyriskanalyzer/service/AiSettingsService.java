@@ -16,7 +16,7 @@ import java.time.Instant;
  * <ul>
  *   <li>Settings are stored as a single-row record keyed by {@link #SETTINGS_ID}.</li>
  *   <li>The API key is stored encrypted if {@link CryptoService#isEncryptionConfigured()} returns true.</li>
- *   <li>If encryption is enabled, changing {@code riskscanner.encryption.secret} will prevent decrypting
+ *   <li>If encryption is enabled, changing {@code buildaegis.encryption.secret} will prevent decrypting
  *   previously stored API keys.</li>
  * </ul>
  */

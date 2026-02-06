@@ -18,12 +18,12 @@ import java.util.Base64;
  * <p>Encryption details:
  * <ul>
  *   <li>AES-GCM with random IV per ciphertext</li>
- *   <li>Key material derived from {@code riskscanner.encryption.secret} using SHA-256</li>
+ *   <li>Key material derived from {@code buildaegis.encryption.secret} using SHA-256</li>
  * </ul>
  *
  * <p>Operational notes:
  * <ul>
- *   <li>If {@code riskscanner.encryption.secret} is blank, values are stored in plaintext.</li>
+ *   <li>If {@code buildaegis.encryption.secret} is blank, values are stored in plaintext.</li>
  *   <li>If values were stored encrypted and the secret is later removed/changed, decryption will fail.</li>
  * </ul>
  */
@@ -35,7 +35,7 @@ public class CryptoService {
 
     private final SecureRandom secureRandom = new SecureRandom();
 
-    @Value("${riskscanner.encryption.secret:}")
+    @Value("${buildaegis.encryption.secret:}")
     private String encryptionSecret;
 
     public boolean isEncryptionConfigured() {

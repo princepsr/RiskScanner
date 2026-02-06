@@ -1,8 +1,8 @@
-# Risk Scanner Features
+# BuildAegis Features
 
 ## Overview
 
-Risk Scanner provides comprehensive vulnerability analysis for Java projects. This guide explains all features and how to use them effectively.
+BuildAegis provides comprehensive vulnerability analysis for Java projects. This guide explains all features and how to use them effectively.
 
 ## Core Features
 
@@ -111,7 +111,7 @@ The UI now supports saving AI settings to the backend:
 6. **Test Connection** - Click "Test Connection" to verify connectivity
 
 **Security Notes:**
-- API keys are encrypted at rest when `riskscanner.encryption.secret` is configured
+- API keys are encrypted at rest when `buildaegis.encryption.secret` is configured
 - Settings persist across browser sessions
 - Each provider+model combination is stored separately
 - Keys are never displayed in the UI after saving
@@ -344,19 +344,19 @@ Configure in the UI or via `application.properties`:
 
 ```properties
 # AI Provider Configuration
-riskscanner.ai.provider=openai
-riskscanner.ai.model=gpt-4o-mini
-riskscanner.ai.api-key=your-api-key
+buildaegis.ai.provider=openai
+buildaegis.ai.model=gpt-4o-mini
+buildaegis.ai.api-key=your-api-key
 
 # Encryption (recommended)
-riskscanner.encryption.secret=your-secret-key
+buildaegis.encryption.secret=your-secret-key
 ```
 
 ### Database Configuration
 
 Default H2 configuration:
 ```properties
-spring.datasource.url=jdbc:h2:file:./data/risk-scanner
+spring.datasource.url=jdbc:h2:file:./data/buildaegis
 spring.datasource.username=sa
 spring.datasource.password=
 spring.h2.console.enabled=true

@@ -12,7 +12,7 @@
 	<groupId>com.riskscanner</groupId>
 	<artifactId>dependency-risk-analyzer</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>Risk Scanner</name>
+	<name>BuildAegis</name>
 	<description>A tool for analyzing dependency risks in Java projects</description>
 	<url />
 	<licenses>

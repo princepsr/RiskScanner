@@ -9,7 +9,7 @@ import java.time.Instant;
  *
  * <p>This table is used as a single-row settings store (see {@code AiSettingsService}).
  * The {@code encrypted} flag indicates whether {@code apiKeyCiphertext} is encrypted using
- * {@code riskscanner.encryption.secret}.
+ * {@code buildaegis.encryption.secret}.
  */
 @Entity
 @Table(name = "ai_settings")

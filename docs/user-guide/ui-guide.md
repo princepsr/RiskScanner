@@ -2,13 +2,13 @@
 
 ## Overview
 
-Risk Scanner features a clean, two-panel interface designed for efficient vulnerability analysis. This guide walks through each UI element and explains its purpose.
+BuildAegis features a clean, two-panel interface designed for efficient vulnerability analysis. This guide walks through each UI element and explains its purpose.
 
 ## Interface Layout
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│  Risk Scanner                                    [Status: Idle]          │ Header
+│  BuildAegis                                      [Status: Idle]          │ Header
 ├─────────────────────────────┬───────────────────────────────────────────┤
 │                             │                                           │
 │  INPUT & CONFIGURATION      │  RESULTS & ANALYSIS                       │
@@ -40,7 +40,7 @@ Risk Scanner features a clean, two-panel interface designed for efficient vulner
 ## Header
 
 ### App Title and Subtitle
-- **Risk Scanner** - Main title
+- **BuildAegis** - Main title
 - **Dependency Vulnerability Analysis for Java Projects** - Subtitle explaining purpose
 
 ### Status Chip

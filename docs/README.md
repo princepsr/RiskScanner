@@ -1,6 +1,6 @@
-# Risk Scanner Documentation
+# BuildAegis Documentation
 
-Welcome to the Risk Scanner documentation. This organized documentation structure provides comprehensive information for users, developers, and system administrators.
+Welcome to the BuildAegis documentation. This organized documentation structure provides comprehensive information for users, developers, and system administrators.
 
 ## Documentation Structure
 
@@ -45,7 +45,7 @@ docs/
 ## Key Information
 
 ### Current Risk Scoring Algorithm
-The Risk Scanner uses a **critical-dominance weighted algorithm** with the following characteristics:
+BuildAegis uses a **critical-dominance weighted algorithm** with the following characteristics:
 
 - **Critical vulnerabilities** have disproportionate impact (40 points each + boost)
 - **Minimum score floors** based on critical count: 1 Critical min 40, 2 Critical min 60, 3+ Critical min 90

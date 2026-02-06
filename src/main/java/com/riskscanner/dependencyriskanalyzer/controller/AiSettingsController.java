@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
  * API for configuring and validating the AI provider settings.
  *
  * <p>Settings are persisted locally (H2) and the API key is stored encrypted when
- * {@code riskscanner.encryption.secret} is configured.
+ * {@code buildaegis.encryption.secret} is configured.
  */
 @RestController
 @RequestMapping("/api/ai")

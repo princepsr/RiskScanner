@@ -1,6 +1,6 @@
 package com.riskscanner.dependencyriskanalyzer.desktop;
 
-import com.riskscanner.dependencyriskanalyzer.RiskScannerApplication;
+import com.riskscanner.dependencyriskanalyzer.BuildAegisApplication;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.scene.Scene;
@@ -10,7 +10,7 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 
 /**
- * JavaFX desktop wrapper for the Risk Scanner application.
+ * JavaFX desktop wrapper for the BuildAegis application.
  *
  * <p>This class starts the Spring Boot backend in-process and loads the standard web UI
  * ({@code http://localhost:8080/}) in a JavaFX {@link WebView}.
@@ -27,7 +27,7 @@ public class DesktopApplication extends Application {
 
     @Override
     public void init() {
-        springContext = new SpringApplicationBuilder(RiskScannerApplication.class)
+        springContext = new SpringApplicationBuilder(BuildAegisApplication.class)
                 .properties(
                         "server.port=8080",
                         "spring.main.web-application-type=servlet"
@@ -41,7 +41,7 @@ public class DesktopApplication extends Application {
         webView.getEngine().load("http://localhost:8080/");
 
         Scene scene = new Scene(webView, 1200, 800);
-        stage.setTitle("Risk Scanner");
+        stage.setTitle("BuildAegis");
         stage.setScene(scene);
         stage.show();
 

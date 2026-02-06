@@ -17,8 +17,8 @@ import org.springframework.stereotype.Component;
  * </ul>
  *
  * <p>For Azure OpenAI, the API key must be the Azure key and the endpoint must be provided
- * via {@code riskscanner.ai.azure-openai.endpoint}. For Ollama, the base URL defaults to
- * {@code http://localhost:11434} and can be overridden via {@code riskscanner.ai.ollama.base-url}.
+ * via {@code buildaegis.ai.azure-openai.endpoint}. For Ollama, the base URL defaults to
+ * {@code http://localhost:11434} and can be overridden via {@code buildaegis.ai.ollama.base-url}.
  */
 @Lazy
 @Component
@@ -52,7 +52,7 @@ public class AiClientFactory {
             case "ollama" -> new OllamaClient(model, ollamaBaseUrl);
             case "azure-openai" -> {
                 if (azureOpenAiEndpoint == null || azureOpenAiEndpoint.isBlank()) {
-                    throw new IllegalArgumentException("Azure OpenAI endpoint must be configured via riskscanner.ai.azure-openai.endpoint");
+                    throw new IllegalArgumentException("Azure OpenAI endpoint must be configured via buildaegis.ai.azure-openai.endpoint");
                 }
                 yield new AzureOpenAiClient(apiKey, azureOpenAiEndpoint, model);
             }

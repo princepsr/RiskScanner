@@ -144,7 +144,7 @@ curl https://api.openai.com/v1/models \
    ```
 3. Or delete database files and restart:
    ```bash
-   rm ./data/risk-scanner.mv.db
+   rm ./data/buildaegis.mv.db
    ./mvnw spring-boot:run
    ```
 
@@ -315,11 +315,11 @@ curl https://api.openai.com/v1/models \
    ```
 2. Check correct JDBC URL in console:
    ```
-   jdbc:h2:file:./data/risk-scanner
+   jdbc:h2:file:./data/buildaegis
    ```
 3. Try without path:
    ```
-   jdbc:h2:mem:risk-scanner
+   jdbc:h2:mem:buildaegis
    ```
 
 #### Database locked error
@@ -329,7 +329,7 @@ curl https://api.openai.com/v1/models \
 1. Kill any hanging Java processes:
    ```bash
    # macOS/Linux
-   pkill -f "risk-scanner"
+   pkill -f "buildaegis"
    
    # Windows
    taskkill /F /IM java.exe
@@ -345,12 +345,12 @@ curl https://api.openai.com/v1/models \
 #### "Encryption secret is not configured"
 **Symptoms**: Warning about API key encryption
 
-**Explanation**: API keys are stored encrypted only when `riskscanner.encryption.secret` is set.
+**Explanation**: API keys are stored encrypted only when `buildaegis.encryption.secret` is set.
 
 **Solutions**:
 ```properties
 # In application.properties or application-dev.properties
-riskscanner.encryption.secret=your-secret-key-min-16-chars
+buildaegis.encryption.secret=your-secret-key-min-16-chars
 ```
 
 **Important**:

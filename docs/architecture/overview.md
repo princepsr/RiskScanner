@@ -2,7 +2,7 @@
 
 ## System Overview
 
-Risk Scanner is a Spring Boot application that:
+BuildAegis is a Spring Boot application that:
 
 - Scans Java projects (Maven/Gradle) for dependencies
 - Enriches dependencies with vulnerability metadata

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Risk Scanner backend is a Spring Boot application that provides REST APIs for vulnerability analysis. This document explains the backend architecture, components, and data flow.
+The BuildAegis backend is a Spring Boot application that provides REST APIs for vulnerability analysis. This document explains the backend architecture, components, and data flow.
 
 ## Technology Stack
 
@@ -207,9 +207,9 @@ public class AiAnalysisResult {
 
 **Configuration**:
 ```properties
-riskscanner.ai.provider=openai
-riskscanner.ai.model=gpt-4o-mini
-riskscanner.ai.api-key=sk-...
+buildaegis.ai.provider=openai
+buildaegis.ai.model=gpt-4o-mini
+buildaegis.ai.api-key=sk-...
 ```
 
 ### 5. AiSettingsService
@@ -220,7 +220,7 @@ riskscanner.ai.api-key=sk-...
 
 **Encryption**:
 - Uses AES-GCM via CryptoService
-- Only encrypts if `riskscanner.encryption.secret` is set
+- Key material derived from `buildaegis.encryption.secret` using SHA-256
 - API keys stored in `AiSettingsEntity`
 
 **Entity Structure**:
@@ -506,19 +506,19 @@ Frontend displays results
 server.port=8080
 
 # Database
-spring.datasource.url=jdbc:h2:file:./data/risk-scanner
+spring.datasource.url=jdbc:h2:file:./data/buildaegis
 spring.datasource.username=sa
 spring.datasource.password=
 spring.h2.console.enabled=true
 spring.jpa.hibernate.ddl-auto=update
 
 # AI (optional)
-riskscanner.ai.provider=openai
-riskscanner.ai.model=gpt-4o-mini
-# riskscanner.ai.api-key=sk-...
+buildaegis.ai.provider=openai
+buildaegis.ai.model=gpt-4o-mini
+# buildaegis.ai.api-key=sk-...
 
 # Encryption (recommended)
-# riskscanner.encryption.secret=your-secret-key-min-16-chars
+# buildaegis.encryption.secret=your-secret-key-min-16-chars
 
 # Logging
 logging.level.com.riskscanner.dependencyriskanalyzer=INFO
@@ -577,7 +577,7 @@ Spring Boot Actuator endpoints:
 Access at: `http://localhost:8080/h2-console`
 
 Connection details:
-- JDBC URL: `jdbc:h2:file:./data/risk-scanner`
+- JDBC URL: `jdbc:h2:file:./data/buildaegis`
 - User: `sa`
 - Password: (empty)
 
