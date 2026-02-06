@@ -157,13 +157,13 @@ body{
 .theme-toggle:focus{outline:none; box-shadow:0 0 0 3px rgba(77,163,255,.14)}
 .app-header__title{
   margin:0;
-  font-size:18px;
+  font-size:20px;
   letter-spacing:.2px;
 }
 .app-header__subtitle{
   margin:4px 0 0;
   color:var(--muted);
-  font-size:13px;
+  font-size:14px;
 }
 
 .status-chip{
@@ -214,16 +214,16 @@ body{
   border-bottom:1px solid var(--border);
   background:rgba(15,23,34,.8);
 }
-.panel__title{margin:0; font-size:14px; color:var(--text); letter-spacing:.3px;}
-.panel__body{padding:14px; display:flex; flex-direction:column; gap:12px;}
+.panel__title{margin:0; font-size:16px; color:var(--text); letter-spacing:.3px;}
+.panel__body{padding:12px; display:flex; flex-direction:column; gap:10px;}
 
 .card{
   border:1px solid var(--border);
   border-radius:var(--radius-sm);
   background:rgba(11,15,20,.35);
-  padding:12px;
+  padding:10px;
 }
-.card__title{margin:0 0 10px; font-size:13px; color:var(--text);}
+.card__title{margin:0 0 8px; font-size:14px; color:var(--text);}
 
 .card__title-row{
   display:flex;
@@ -242,15 +242,16 @@ body{
 .form-row:last-child{margin-bottom:0}
 .form-row--inline{flex-direction:row; align-items:center; justify-content:flex-start; gap:10px;}
 
-.form-label{font-size:12px; color:var(--muted);}
+.form-label{font-size:13px; color:var(--muted);}
 .form-input,.form-select{
   width:100%;
-  padding:10px 10px;
+  padding:8px 10px;
   border-radius:10px;
   border:1px solid var(--border);
   background:rgba(15,23,34,.6);
   color:var(--text);
   outline:none;
+  font-size:14px;
 }
 .form-select option {
   background:rgba(15,23,34,.95);
@@ -635,8 +636,8 @@ body{
 .btn{
   border-radius:10px;
   border:1px solid var(--border);
-  padding:10px 12px;
-  font-size:13px;
+  padding:8px 12px;
+  font-size:14px;
   cursor:pointer;
   color:var(--text);
   background:rgba(15,23,34,.65);
@@ -884,14 +885,15 @@ body{
   gap:10px;
   margin-bottom:8px;
 }
-.summary-tile{
+.summary-tile.kpi{
   border:1px solid var(--border);
-  border-radius:10px;
-  padding:10px;
-  background:rgba(15,23,34,.5);
+  border-radius:12px;
+  padding:8px;
+  background:rgba(15,23,34,.05);
+  position:relative;
 }
-.summary-tile__k{font-size:11px; color:var(--muted);}
-.summary-tile__v{font-size:18px; margin-top:4px; font-family:var(--mono)}
+.kpi__k{font-size:14px; color:var(--muted);}
+.kpi__v{font-size:24px; margin-top:4px; font-family:var(--mono);}
 
 /* Global scrollbar styling to match UI theme */
 ::-webkit-scrollbar {
@@ -926,8 +928,8 @@ body{
   border:1px solid var(--border);
 }
 .table{width:100%; border-collapse:collapse; min-width:680px; background:rgba(15,23,34,.05)}
-.table th,.table td{padding:10px 10px; border-bottom:1px solid var(--border); vertical-align:top; font-size:13px;}
-.table th{position:sticky; top:0; background:rgba(15,23,34,.9); text-align:left; font-size:12px; color:var(--muted); white-space:nowrap;}
+.table th,.table td{padding:8px 10px; border-bottom:1px solid var(--border); vertical-align:top; font-size:14px;}
+.table th{position:sticky; top:0; background:rgba(15,23,34,.9); text-align:left; font-size:13px; color:var(--muted); white-space:nowrap;}
 
 .mono{font-family:var(--mono)}
 .muted{color:var(--muted); font-size:12px; margin:8px 0 0}
