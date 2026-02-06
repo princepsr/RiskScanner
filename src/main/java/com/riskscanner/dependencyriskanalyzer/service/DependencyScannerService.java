@@ -122,7 +122,16 @@ public class DependencyScannerService {
      */
     private void flattenNode(List<DependencyNode> nodes, List<DependencyCoordinate> result) {
         for (DependencyNode node : nodes) {
-            DependencyCoordinate coord = node.getCoordinate();
+            boolean isDirect = node.isDirectDependency();
+            
+            DependencyCoordinate coord = new DependencyCoordinate(
+                node.getCoordinate().groupId(),
+                node.getCoordinate().artifactId(),
+                node.getCoordinate().version(),
+                node.getCoordinate().buildTool(),
+                node.getCoordinate().scope(),
+                isDirect
+            );
             
             // Add if not already present (avoid duplicates)
             if (result.stream().noneMatch(c -> 
@@ -130,6 +139,7 @@ public class DependencyScannerService {
                 c.artifactId().equals(coord.artifactId()) && 
                 c.version().equals(coord.version()))) {
                 result.add(coord);
+            } else {
             }
             
             // Recursively process children

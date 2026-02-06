@@ -5,6 +5,10 @@ public record DependencyCoordinate(
         String artifactId,
         String version,
         String buildTool,
-        String scope
+        String scope,
+        boolean isDirect
 ) {
+    public DependencyCoordinate(String groupId, String artifactId, String version, String buildTool, String scope) {
+        this(groupId, artifactId, version, buildTool, scope, true);
+    }
 }

@@ -116,7 +116,8 @@ public class ProjectAnalysisService {
                         true,
                         cached.getAnalyzedAt(),
                         cached.getProvider(),
-                        cached.getModel()
+                        cached.getModel(),
+                        dependency.isDirect()
                 ));
                 continue;
             }
@@ -152,7 +153,8 @@ public class ProjectAnalysisService {
                     false,
                     entity.getAnalyzedAt(),
                     entity.getProvider(),
-                    entity.getModel()
+                    entity.getModel(),
+                    dependency.isDirect()
             ));
         }
 

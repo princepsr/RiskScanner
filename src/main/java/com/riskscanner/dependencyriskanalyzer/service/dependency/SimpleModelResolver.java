@@ -7,7 +7,13 @@ import org.apache.maven.model.resolution.ModelResolver;
 import org.apache.maven.model.resolution.UnresolvableModelException;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 /**
  * Simple model resolver for building effective Maven models.
@@ -17,6 +23,8 @@ import java.nio.file.Path;
  * model with inherited properties and dependency management.
  */
 public class SimpleModelResolver implements ModelResolver {
+
+    private static final String MAVEN_CENTRAL = "https://repo.maven.apache.org/maven2/";
 
     @Override
     public ModelSource resolveModel(String groupId, String artifactId, String version) throws UnresolvableModelException {
@@ -29,11 +37,22 @@ public class SimpleModelResolver implements ModelResolver {
             return new FileModelSource(pomFile);
         }
 
-        // For now, we can't download from remote - return null to let it fail gracefully
-        // The dependency will still be resolved by Aether later
-        throw new UnresolvableModelException(
-            "Parent POM not found in local repository: " + groupId + ":" + artifactId + ":" + version +
-            " (Remote download not implemented)", groupId, artifactId, version);
+        // Download from Maven Central
+        try {
+            URL centralUrl = new URL(MAVEN_CENTRAL + relativePath);
+            Path tempFile = Files.createTempFile(artifactId + "-" + version, ".pom");
+            tempFile.toFile().deleteOnExit();
+            
+            try (InputStream is = centralUrl.openStream()) {
+                Files.copy(is, tempFile, StandardCopyOption.REPLACE_EXISTING);
+            }
+            
+            return new FileModelSource(tempFile.toFile());
+        } catch (IOException e) {
+            throw new UnresolvableModelException(
+                "Could not resolve POM from local repository or Maven Central: " + groupId + ":" + artifactId + ":" + version,
+                groupId, artifactId, version);
+        }
     }
 
     @Override

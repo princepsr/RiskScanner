@@ -1022,9 +1022,8 @@ const RiskScanner = (() => {
         // Confidence: HIGH for Maven (reliable), MEDIUM for Gradle (less reliable), or from build tool setting
         const confidence = r.buildTool === 'gradle' ? 'MEDIUM' : 'HIGH';
 
-        // Directness: should come from actual dependency resolution (fallback to direct for now)
-        // In real implementation, backend should send isDirect or isTransitive flag
-        const directness = r.buildTool === 'gradle' ? 'transitive' : 'direct';
+        // Directness: use actual value from backend dependency resolution
+        const directness = r.isDirect ? 'direct' : 'transitive';
 
         return {
           _id: `dep-${idx}`,

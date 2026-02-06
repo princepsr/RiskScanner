@@ -27,6 +27,7 @@ public record DependencyRiskDto(
         boolean fromCache,
         Instant analyzedAt,
         String provider,
-        String model
+        String model,
+        boolean isDirect
 ) {
 }

@@ -69,7 +69,8 @@ public class DashboardController {
                     true,
                     entity.getAnalyzedAt(),
                     entity.getProvider(),
-                    entity.getModel()
+                    entity.getModel(),
+                    true
             ));
         }
 
