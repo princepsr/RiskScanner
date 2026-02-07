@@ -157,6 +157,43 @@ The resolver now:
 - Consider using Maven for critical security audits
 - Run `./gradlew dependencies` separately and compare
 
+#### Gradle wrapper not found or fails to execute
+**Symptoms**: 
+- "Gradle not found" error
+- "Failed to extract bundled Gradle wrapper"
+- Permission denied errors
+
+**Explanation**: The app tries multiple Gradle sources but may fail if:
+- No system Gradle installed
+- Project has no wrapper
+- Permission issues during extraction
+
+**Solutions**:
+1. **Install Gradle** (recommended):
+   ```bash
+   # Windows: Use package manager or download from gradle.org
+   # macOS: brew install gradle
+   # Linux: sudo apt install gradle
+   ```
+
+2. **Add wrapper to project**:
+   ```bash
+   cd your-project
+   gradle wrapper --gradle-version 8.5
+   ```
+
+3. **Check permissions** (Unix):
+   ```bash
+   chmod +x .buildaegis-gradle-wrapper/gradlew
+   ```
+
+4. **Clear extracted wrapper**:
+   ```bash
+   rm -rf .buildaegis-gradle-wrapper
+   ```
+
+The app will automatically retry with the next available Gradle source.
+
 #### Multi-project Gradle analysis is very slow
 **Symptoms**: Analysis of large Gradle multi-project builds takes 5+ minutes
 

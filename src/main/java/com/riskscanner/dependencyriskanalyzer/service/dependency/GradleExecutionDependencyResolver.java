@@ -38,6 +38,12 @@ import java.util.regex.Pattern;
 public class GradleExecutionDependencyResolver implements DependencyResolver {
 
     private static final Logger logger = LoggerFactory.getLogger(GradleExecutionDependencyResolver.class);
+    
+    private final GradleWrapperService wrapperService;
+
+    public GradleExecutionDependencyResolver(GradleWrapperService wrapperService) {
+        this.wrapperService = wrapperService;
+    }
 
     private static final List<String> CONFIGURATIONS = List.of(
         "compileClasspath",
@@ -219,41 +225,21 @@ public class GradleExecutionDependencyResolver implements DependencyResolver {
     /**
      * Runs Gradle command safely.
      */
-    private List<String> runGradleCommand(Path projectPath, String... args) throws IOException, InterruptedException {
-        return runGradleCommand(projectPath, false, args);
-    }
-
-    /**
-     * Runs Gradle command with wrapper preference.
-     */
     private List<String> runGradleCommand(Path projectPath, boolean preferWrapper, String... args) throws IOException, InterruptedException {
         List<String> command = new ArrayList<>();
-        boolean isWindows = System.getProperty("os.name").toLowerCase().contains("windows");
         
         if (preferWrapper) {
-            // Try wrapper first - prioritize OS-specific wrapper
-            Path gradlew = projectPath.resolve("gradlew");
-            Path gradlewBat = projectPath.resolve("gradlew.bat");
-            
-            if (isWindows && gradlewBat.toFile().exists()) {
-                // On Windows, prioritize .bat file
-                command.add(gradlewBat.toString());
-            } else if (gradlew.toFile().exists()) {
-                // Use Unix wrapper on non-Windows or if .bat doesn't exist
-                command.add(gradlew.toString());
-            } else if (gradlewBat.toFile().exists()) {
-                // Fallback to .bat on Windows if Unix wrapper doesn't exist
-                command.add(gradlewBat.toString());
-            } else {
-                logger.warn("Gradle wrapper not found, falling back to system gradle");
-                command.add("gradle");
-            }
+            // Use hybrid wrapper resolution
+            String gradleCommand = wrapperService.resolveGradleCommand(projectPath);
+            command.add(gradleCommand);
         } else {
+            boolean isWindows = System.getProperty("os.name").toLowerCase().contains("windows");
             command.add(resolveSystemGradleCommand(projectPath, isWindows));
         }
         
         command.addAll(List.of(args));
 
+        boolean isWindows = System.getProperty("os.name").toLowerCase().contains("windows");
         if (isWindows && !command.isEmpty() && "gradle".equalsIgnoreCase(command.get(0))) {
             List<String> wrapped = new ArrayList<>();
             wrapped.add("cmd");

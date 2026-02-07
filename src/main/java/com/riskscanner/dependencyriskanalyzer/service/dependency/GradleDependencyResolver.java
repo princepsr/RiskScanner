@@ -31,6 +31,12 @@ import java.util.regex.Pattern;
 public class GradleDependencyResolver implements DependencyResolver {
 
     private static final Logger logger = LoggerFactory.getLogger(GradleDependencyResolver.class);
+    
+    private final GradleWrapperService wrapperService;
+
+    public GradleDependencyResolver(GradleWrapperService wrapperService) {
+        this.wrapperService = wrapperService;
+    }
 
     private static final Pattern DEPENDENCY_PATTERN = Pattern.compile(
         "^\\s*[+\\\\-]*[-+\\\\| ]*([^: \t]+):([^: \t]+):([^: \t]+).*$"
@@ -116,19 +122,8 @@ public class GradleDependencyResolver implements DependencyResolver {
     }
 
     private List<String> runGradleDependencyTree(Path projectPath, String configuration) throws IOException, InterruptedException {
-        // Try to use Gradle wrapper first
-        File gradleWrapper = projectPath.resolve("gradlew").toFile();
-        if (!gradleWrapper.exists()) {
-            gradleWrapper = projectPath.resolve("gradlew.bat").toFile();
-        }
-        
-        String gradleCommand;
-        if (gradleWrapper.exists()) {
-            gradleCommand = gradleWrapper.getAbsolutePath();
-        } else {
-            // Fallback to system gradle
-            gradleCommand = "gradle";
-        }
+        // Use hybrid wrapper resolution
+        String gradleCommand = wrapperService.resolveGradleCommand(projectPath);
         
         // Run gradle dependencies command
         ProcessBuilder pb = new ProcessBuilder(

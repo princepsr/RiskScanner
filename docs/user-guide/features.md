@@ -132,26 +132,45 @@ The UI now supports saving AI settings to the backend:
 
 **Risk Explanations**
 - Plain English descriptions of vulnerabilities
-- Why the vulnerability matters for your specific dependency
-- Real-world impact scenarios
 
-**Impact Assessment**
-- How the vulnerability affects your project
-- Likelihood of exploitation
-- Potential damage evaluation
+### 6. Zero-Installation Gradle Support
 
-**Remediation Advice**
-- Specific steps to fix the issue
-- Version upgrade recommendations
-- Alternative dependency suggestions
-- Breaking change warnings
+The application includes a **bundled Gradle wrapper** to ensure dependency analysis works without requiring Gradle installation.
 
-**Security Note**
-- Only dependency names and CVE data sent to AI
-- No source code or proprietary information shared
-- API keys encrypted at rest (with configured secret)
+#### Gradle Resolution Priority
 
-### 6. Filtering and Search
+The app tries Gradle installations in this order:
+
+1. **Project Wrapper** (Preferred)
+   - Uses `gradlew` or `gradlew.bat` if present in the project
+   - Respects project's specific Gradle version
+
+2. **Bundled Wrapper** (Fallback)
+   - Extracts Gradle 8.5 wrapper from the application JAR
+   - Extracted to `.buildaegis-gradle-wrapper/` in project directory
+   - Works on Windows and Unix systems
+
+3. **System Gradle** (Last Resort)
+   - Uses `gradle` command if available in PATH
+   - Falls back if no wrapper is available
+
+4. **Error Guidance**
+   - Clear error message with installation instructions
+   - Links to Gradle installation guide
+
+#### Benefits
+
+- ✅ **Zero Installation** - Analyze any Gradle project immediately
+- ✅ **Self-Contained** - No external dependencies required
+- ✅ **Cross-Platform** - Windows, macOS, Linux support
+- ✅ **Version-Aware** - Uses project's Gradle when available
+- ✅ **Graceful Degradation** - Always tries the next best option
+
+#### Usage
+
+No configuration required. The app automatically selects the best available Gradle installation when analyzing Gradle projects.
+
+### 7. Filtering and Search
 
 #### Search by Dependency Name
 - Real-time filtering as you type

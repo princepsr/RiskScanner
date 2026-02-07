@@ -25,8 +25,13 @@ Runs a full analysis pipeline for a project path.
 }
 ```
 
+**Request Fields:**
+- `projectPath` (string, required): Path to Maven or Gradle project
+- `forceRefresh` (boolean, optional): Bypass cache and re-analyze
+- `aiEnabled` (boolean, optional): Enable AI analysis (requires configured AI settings)
+
 Notes:
-- Actual request shape can differ depending on current backend DTOs.
+- For Gradle projects, the app automatically uses the best available Gradle installation (project wrapper → bundled wrapper → system Gradle)
 - The UI primarily sends project path and scan settings.
 - When `aiEnabled` is `false` (or omitted), the backend will not call any AI provider APIs.
 

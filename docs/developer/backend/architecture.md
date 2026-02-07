@@ -44,6 +44,12 @@ src/main/java/com/riskscanner/dependencyriskanalyzer/
 │   ├── AIAnalysisService.java         # AI provider integration
 │   ├── AiSettingsService.java         # AI settings management
 │   ├── CryptoService.java             # Encryption/decryption
+│   ├── dependency/                  # Dependency resolution
+│   │   ├── DependencyResolverFactory.java    # Resolver factory and priority
+│   │   ├── GradleWrapperService.java       # Bundled Gradle wrapper service
+│   │   ├── MavenDependencyResolver.java     # Maven Aether resolver
+│   │   ├── GradleDependencyResolver.java   # Gradle CLI resolver
+│   │   └── GradleExecutionDependencyResolver.java # Gradle execution resolver
 │   ├── DependencyScannerService.java  # Build file parsing
 │   ├── MetadataEnrichmentService.java # OSV/Maven enrichment
 │   ├── PdfExportService.java          # PDF generation
@@ -105,10 +111,24 @@ public List<DependencyInfo> scanMavenDependencies(Path projectPath)
 ```java
 public List<DependencyInfo> scanGradleDependencies(Path projectPath)
 ```
-- Parses `build.gradle` and `build.gradle.kts`
-- Regex-based dependency extraction
+- Uses **hybrid wrapper approach** via `GradleWrapperService`
+- Resolution priority:
+  1. Project wrapper (`gradlew`/`gradlew.bat`) if exists
+  2. Bundled wrapper (extracted from JAR to `.buildaegis-gradle-wrapper/`)
+  3. System Gradle if available in PATH
+  4. Error with installation instructions
+- Supports both CLI parsing and execution strategies
 - MEDIUM confidence (best-effort)
-- Does NOT execute Gradle commands (safe mode)
+- Zero installation required for end users
+
+**GradleWrapperService**:
+```java
+public String resolveGradleCommand(Path projectPath)
+```
+- Extracts bundled Gradle 8.5 wrapper from resources
+- Sets executable permissions on Unix systems
+- Cross-platform support (Windows/Unix)
+- Graceful fallbacks with detailed logging
 
 **DependencyInfo Structure**:
 ```java
